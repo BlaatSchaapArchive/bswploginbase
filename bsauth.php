@@ -14,6 +14,11 @@ License: BSD
 //------------------------------------------------------------------------------
 if (!isset($BSAUTH_SERVICES)) $BSAUTH_SERVICES = array();
 
+require_once("classes/BlaatLogin.class.php");
+require_once("classes/BlaatLoginService.class.php");
+add_action("admin_menu",            "BlaatLogin::init");
+
+
 //------------------------------------------------------------------------------
 if (!function_exists("bsauth_buttons_sort")) {
   function bsauth_buttons_sort($a, $b) {
