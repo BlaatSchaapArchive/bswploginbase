@@ -1,4 +1,5 @@
 <?php
+
   class BlaatLogin{
     function init(){
 
@@ -10,13 +11,13 @@
                                           __('BlaatLogin Services',"blaat_auth"), 
                                           'manage_options', 
                                           'blaatlogin_configure_services', 
-                                          'BlaatLogin::generateConfigPage' );
+                                          'BlaatLogin::generateServiceConfigPage' );
 
       add_submenu_page('blaat_plugins' ,  __('BlaatLogin Pages',"blaat_auth"),   
                                           __('BlaatLogin Pages',"blaat_auth"), 
                                           'manage_options', 
                                           'blaatlogin_configure_pages', 
-                                          'BlaatLogin::generatePageSetupPage' );
+                                          'BlaatLogin::generatePageConfigPage' );
 
       add_action("admin_enqueue_scripts", "BlaatLogin::enqueueAdminCSS" );
 
@@ -28,17 +29,39 @@
       wp_enqueue_style( "BlaatLoginConfig");
     }
 
-    function generatePageSetupPage($echo=true){
+    function generatePageConfigPage($echo=true){
       //TODO implement me
     }
-    function generateConfigPage($echo=true){
+
+
+    function displayUpdatedNotice() { 
+      // sample code from WordPress Codex
+      // should this be rewritten?
+        ?> 
+        <div class="updated">
+            <p><?php _e("Settings saved"); ?></p>
+        </div>
+        <?php
+    }
 
 
 
-
+    function generateServiceConfigPage($echo=true){
       $edit   = isset($_POST['bsauth_edit']);
       $delete   = isset($_POST['bsauth_delete']);
       $add   = isset($_POST['bsauth_add']);
+
+      if (isset($_POST["bsauth_edit_save"])) {
+        global $BSAUTH_SERVICES;
+        $plugin_id = $_POST['plugin_id'];
+        $service_id = $_POST['service_id'];
+        unset($_POST['plugin_id']);
+        unset($_POST['service_id']);
+        unset($_POST['bsauth_edit_save']);
+        $service = $BSAUTH_SERVICES[$plugin_id];
+        $service->setConfig($service_id);        
+        BlaatLogin::displayUpdatedNotice();
+      }
 
       // rewrite?
       if ($edit) {
@@ -82,14 +105,15 @@
       generatePageSetupEditPage($plugin_id, $service_id);
       // TODO: possibly hide preconfigured values for preconfigures services
     } else {
-      BlaatSchaap::GenerateOptions($service->getConfigOptions());
+      //BlaatSchaap::GenerateOptions($service->getConfigOptions());
+      BlaatSchaap::GenerateOptions($service->getConfigOptions(), NULL, __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_add_save");
     }
   }
 //------------------------------------------------------------------------------
   function generatePageSetupEditPage($plugin_id, $service_id){
     global $BSAUTH_SERVICES;
     $service = $BSAUTH_SERVICES[$plugin_id];
-    BlaatSchaap::GenerateOptions($service->getConfigOptions(), $service->getConfig($service_id));
+    BlaatSchaap::GenerateOptions($service->getConfigOptions(), $service->getConfig($service_id), __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_edit_save");
   }
 //------------------------------------------------------------------------------
   function generatePageSetupDeletePage($plugin_id, $service_id){}
@@ -99,6 +123,12 @@
     $configuredServices = array();
     $preConfiguredServices = array();
     $xmlroot = new SimpleXMLElement('<div />');
+
+    $xmlroot->addChild("h1", __("BlaatLogin Service Configuration","BlaatLogin"));
+
+
+    $xmlAddServices = $xmlroot->addChild("div");
+    $xmlAddServices->addChild("h2",__("Add services","BlaatLogin"));
 
 
 
@@ -118,8 +148,10 @@
     }
     usort($configuredServices, "BlaatLogin::sortServices"); 
 
+    $xmlEditServices = $xmlroot->addChild("div");
+    $xmlEditServices->addChild("h2",__("Edit services","BlaatLogin"));
     foreach ($configuredServices as $configuredService) {
-      $xmlService = $xmlroot->addChild("form");
+      $xmlService = $xmlEditServices->addChild("form");
       $xmlService->addAttribute("method","post");
       $xmlService->addAttribute("class", "BlaatLoginServiceConfig");
       $xmltable = $xmlService->addChild("table");  
