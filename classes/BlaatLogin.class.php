@@ -2,6 +2,9 @@
 
   class BlaatLogin{
     function init(){
+    // we cannot use self:: in these function calls
+    // but it can be done elsewhere
+
 
     if (!BlaatSchaap::isPageRegistered('blaat_plugins')){
       add_menu_page('BlaatSchaap', 'BlaatSchaap', 'manage_options', 'blaat_plugins', 'blaat_plugins_page');
@@ -37,9 +40,10 @@
     function displayUpdatedNotice() { 
       // sample code from WordPress Codex
       // should this be rewritten?
+      // TODO message?
         ?> 
         <div class="updated">
-            <p><?php _e("Settings saved"); ?></p>
+            <p><?php _e("Updated"); ?></p>
         </div>
         <?php
     }
@@ -60,7 +64,7 @@
         unset($_POST['bsauth_edit_save']);
         $service = $BSAUTH_SERVICES[$plugin_id];
         $service->setConfig($service_id);        
-        BlaatLogin::displayUpdatedNotice();
+        self::displayUpdatedNotice();
       }
 
       // rewrite?
@@ -73,7 +77,7 @@
         }
         $plugin_id = $login[0];
         $service_id = $login[1];
-        BlaatLogin::generatePageSetupEditPage($plugin_id, $service_id); 
+        self::generatePageSetupEditPage($plugin_id, $service_id); 
       } elseif ($delete) {
        if ( isset($_POST['bsauth_delete'])){
           $login = explode ("-", $_POST['bsauth_delete']);
@@ -83,7 +87,7 @@
         }
         $plugin_id = $login[0];
         $service_id = $login[1];
-          BlaatLogin::generatePageSetupDeletePage($plugin_id, $service_id); 
+          self::generatePageSetupDeletePage($plugin_id, $service_id); 
       } elseif ($add) {
        if ( isset($_POST['bsauth_add'])){
           $login = explode ("-", $_POST['bsauth_add']);
@@ -93,8 +97,8 @@
         }
         $plugin_id = $login[0];
         $config_id = $login[1];
-          BlaatLogin::generatePageSetupAddPage($plugin_id, $config_id); 
-      } else BlaatLogin::generatePageSetupOverviewPage(); 
+          self::generatePageSetupAddPage($plugin_id, $config_id); 
+      } else self::generatePageSetupOverviewPage(); 
     }
 //------------------------------------------------------------------------------
   function generatePageSetupAddPage($plugin_id, $config_id){
@@ -102,7 +106,7 @@
     $service = $BSAUTH_SERVICES[$plugin_id];
     if ($config_id) {
       $service_id = $service->addPreconfiguredService($config_id);
-      generatePageSetupEditPage($plugin_id, $service_id);
+      self::generatePageSetupEditPage($plugin_id, $service_id);
       // TODO: possibly hide preconfigured values for preconfigures services
     } else {
       //BlaatSchaap::GenerateOptions($service->getConfigOptions());
@@ -128,28 +132,65 @@
 
 
     $xmlAddServices = $xmlroot->addChild("div");
+    $xmlAddServices->addAttribute("class", "ServicesList");
     $xmlAddServices->addChild("h2",__("Add services","BlaatLogin"));
 
 
-
-    foreach ($BSAUTH_SERVICES as $service) {
+    foreach ($BSAUTH_SERVICES as $plugin_id =>$plugin) {
       $configuredServices_new = array_merge ( $configuredServices , 
-        $service->getServices(false));
+        $plugin->getServices(false));
       $configuredServices=$configuredServices_new;
 
+      /*
       $preConfiguredServices_new = array_merge ( $preConfiguredServices , 
         $service->getPreConfiguredServices());
       $preConfiguredServices=$preConfiguredServices_new;
+      */
+      $xmlService = $xmlAddServices->addChild("div");
+
+      $xmlService->addAttribute("class", "BlaatLoginServiceConfig");
+      $xmltable = $xmlService->addChild("table");  
+
+      $xmltr = $xmltable->addChild("tr");
+      $xmltr->addChild("th", __("Plugin","BlaatLogin"));
+      $xmltr->addChild("td", $plugin_id);
+
+      $xmltr = $xmltable->addChild("tr");
+      $xmltr->addChild("th", __("Service","BlaatLogin"));
+
+
+      //$xmltd=   
+      $xmlform= $xmltr->addChild("td")->addChild("form");
+      $xmlform->addAttribute("method","post");
+      $xmlselect = $xmlform->addChild("select");
+      $xmlselect->addAttribute("name", "bsauth_add");
+      foreach ($plugin->getPreConfiguredServices() as $preConfiguredService) {
+      //$preConfiguredService
+        $xmloption = $xmlselect->addChild("option", $preConfiguredService->display_name );  
+
+        $xmloption->addAttribute("value" , $preConfiguredService->plugin_id."-".$preConfiguredService->service_id);
+      }
+      $xmlform->addChild("Button",__("Save"));
+      
+
+
     }
 
-    $DEBUG = false;
+
+    
+
+
+    $DEBUG = true;
     if ($DEBUG) {    
-      echo "<pre>"; print_r($service->getPreConfiguredServices()); echo "</pre>";
+      echo "<pre>"; print_r($preConfiguredServices); echo "</pre>";
     }
-    usort($configuredServices, "BlaatLogin::sortServices"); 
 
+    usort($configuredServices, "self::sortServices"); 
+    $xmlroot->addChild("br");
     $xmlEditServices = $xmlroot->addChild("div");
+    $xmlEditServices->addAttribute("class", "ServicesList");
     $xmlEditServices->addChild("h2",__("Edit services","BlaatLogin"));
+
     foreach ($configuredServices as $configuredService) {
       $xmlService = $xmlEditServices->addChild("form");
       $xmlService->addAttribute("method","post");
@@ -158,7 +199,7 @@
 
       $xmltr = $xmltable->addChild("tr");
       $xmltr->addChild("th", __("Plugin","BlaatLogin"));
-      $xmltr->addChild("td", $configuredService->plugin);
+      $xmltr->addChild("td", $configuredService->plugin_id);
 
       $xmltr = $xmltable->addChild("tr");
       $xmltr->addChild("th", __("Display Name","BlaatLogin"));
@@ -166,18 +207,18 @@
 
       $xmltr = $xmltable->addChild("tr");
       $xmltr->addChild("th", __("Button Preview","BlaatLogin"));
-      BlaatLogin::generateButton($configuredService, $xmltr->addChild("td"));
+      self::generateButton($configuredService, $xmltr->addChild("td"));
 
       $xmltr = $xmltable->addChild("tr");
       $xmltr->addChild("th");
       $xmlBtn = $xmltr->addChild("td");
       $xmlUpBtn =  $xmlBtn->addChild("button", __("Move Up","BlaatLogin"));
       $xmlUpBtn->addAttribute("name", "bsauth_moveup");
-      $xmlUpBtn->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
+      $xmlUpBtn->addAttribute("value", $configuredService->plugin_id ."-". $configuredService->service_id);
       $xmlUpBtn->addAttribute("class", "BlaatLoginConfigButton");
       $xmlDownBtn  =$xmlBtn->addChild("button", __("Move Down","BlaatLogin"));
       $xmlDownBtn->addAttribute("name", "bsauth_movedown");
-      $xmlDownBtn->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
+      $xmlDownBtn->addAttribute("value", $configuredService->plugin_id ."-". $configuredService->service_id);
       $xmlDownBtn->addAttribute("class", "BlaatLoginConfigButton");
 
       $xmltr = $xmltable->addChild("tr");
@@ -185,11 +226,11 @@
       $xmlBtn = $xmltr->addChild("td");
       $xmlEditBtn =  $xmlBtn->addChild("button", __("Edit"));
       $xmlEditBtn->addAttribute("name", "bsauth_edit");
-      $xmlEditBtn->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
+      $xmlEditBtn->addAttribute("value", $configuredService->plugin_id ."-". $configuredService->service_id);
       $xmlEditBtn->addAttribute("class", "BlaatLoginConfigButton");
       $xmlDelBtn  =$xmlBtn->addChild("button", __("Delete"));
       $xmlDelBtn->addAttribute("name", "bsauth_delete");
-      $xmlDelBtn->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
+      $xmlDelBtn->addAttribute("value", $configuredService->plugin_id ."-". $configuredService->service_id);
       $xmlDelBtn->addAttribute("class", "BlaatLoginConfigButton");
 
 
