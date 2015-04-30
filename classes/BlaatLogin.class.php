@@ -9,15 +9,23 @@
       add_submenu_page('blaat_plugins' ,  __('BlaatLogin Services',"blaat_auth"),   
                                           __('BlaatLogin Services',"blaat_auth"), 
                                           'manage_options', 
-                                          'blaatlogin_overview', 
+                                          'blaatlogin_configure_services', 
                                           'BlaatLogin::generateConfigPage' );
 
       add_submenu_page('blaat_plugins' ,  __('BlaatLogin Pages',"blaat_auth"),   
                                           __('BlaatLogin Pages',"blaat_auth"), 
                                           'manage_options', 
-                                          'blaatlogin_pages', 
+                                          'blaatlogin_configure_pages', 
                                           'BlaatLogin::generatePageSetupPage' );
 
+      add_action("admin_enqueue_scripts", "BlaatLogin::enqueueAdminCSS" );
+
+
+    }
+
+    function enqueueAdminCSS(){
+      wp_register_style("BlaatLoginConfig" , plugin_dir_url(__FILE__) . "../css/BlaatLoginConfig.css");
+      wp_enqueue_style( "BlaatLoginConfig");
     }
 
     function generatePageSetupPage($echo=true){
@@ -103,29 +111,60 @@
         $service->getPreConfiguredServices());
       $preConfiguredServices=$preConfiguredServices_new;
     }
-    echo "<pre>"; print_r($service->getPreConfiguredServices()); echo "</pre>";
 
+    $DEBUG = false;
+    if ($DEBUG) {    
+      echo "<pre>"; print_r($service->getPreConfiguredServices()); echo "</pre>";
+    }
     usort($configuredServices, "BlaatLogin::sortServices"); 
 
     foreach ($configuredServices as $configuredService) {
       $xmlService = $xmlroot->addChild("form");
       $xmlService->addAttribute("method","post");
-      $xmlService->addAttribute("class", "BlaatLoginService");
-      $xmlService->addChild("span", $configuredService->display_name);
+      $xmlService->addAttribute("class", "BlaatLoginServiceConfig");
+      $xmltable = $xmlService->addChild("table");  
 
-      BlaatLogin::generateButton($configuredService, $xmlroot);
+      $xmltr = $xmltable->addChild("tr");
+      $xmltr->addChild("th", __("Plugin","BlaatLogin"));
+      $xmltr->addChild("td", $configuredService->plugin);
 
-      $xmlEditBtn = $xmlService->addChild("button", "Edit");
+      $xmltr = $xmltable->addChild("tr");
+      $xmltr->addChild("th", __("Display Name","BlaatLogin"));
+      $xmltr->addChild("td", $configuredService->display_name);
+
+      $xmltr = $xmltable->addChild("tr");
+      $xmltr->addChild("th", __("Button Preview","BlaatLogin"));
+      BlaatLogin::generateButton($configuredService, $xmltr->addChild("td"));
+
+      $xmltr = $xmltable->addChild("tr");
+      $xmltr->addChild("th");
+      $xmlBtn = $xmltr->addChild("td");
+      $xmlUpBtn =  $xmlBtn->addChild("button", __("Move Up","BlaatLogin"));
+      $xmlUpBtn->addAttribute("name", "bsauth_moveup");
+      $xmlUpBtn->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
+      $xmlUpBtn->addAttribute("class", "BlaatLoginConfigButton");
+      $xmlDownBtn  =$xmlBtn->addChild("button", __("Move Down","BlaatLogin"));
+      $xmlDownBtn->addAttribute("name", "bsauth_movedown");
+      $xmlDownBtn->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
+      $xmlDownBtn->addAttribute("class", "BlaatLoginConfigButton");
+
+      $xmltr = $xmltable->addChild("tr");
+      $xmltr->addChild("th");
+      $xmlBtn = $xmltr->addChild("td");
+      $xmlEditBtn =  $xmlBtn->addChild("button", __("Edit"));
       $xmlEditBtn->addAttribute("name", "bsauth_edit");
       $xmlEditBtn->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
-
-      $xmlDelBtn  =$xmlService->addChild("button", "Delete");
+      $xmlEditBtn->addAttribute("class", "BlaatLoginConfigButton");
+      $xmlDelBtn  =$xmlBtn->addChild("button", __("Delete"));
       $xmlDelBtn->addAttribute("name", "bsauth_delete");
       $xmlDelBtn->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
-    }
+      $xmlDelBtn->addAttribute("class", "BlaatLoginConfigButton");
 
-    echo $xmlroot->AsXML();
-    return $xmlroot;
+
+    }
+  return BlaatSchaap::xml2html($xmlroot); 
+    //echo $xmlroot->AsXML();
+    //return $xmlroot;
   }
 //------------------------------------------------------------------------------
   function generateButton($configuredService, $xmlroot, $action=NULL){
