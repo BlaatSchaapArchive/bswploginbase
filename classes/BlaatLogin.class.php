@@ -179,18 +179,16 @@
         $xmloption = $xmlselect->addChild("option", $preConfiguredService->display_name );  
         $xmloption->addAttribute("value" , $preConfiguredService->plugin_id."-".$preConfiguredService->service_id);
       }
-      $xmlform->addChild("Button",__("Add"));
+      $xmlform->addChild("td")->addChild("Button",__("Add"));
     }
-      $xmlform= $xmltr->addChild("td")->addChild("form");
-      $xmlform->addAttribute("method","post");
-      $xmlAddCustomButton = $xmlform->addChild("Button",__("Add Custon", "BlaatLogin"));
-      $xmlAddCustomButton->addAttribute("value" , $preConfiguredService->plugin_id."-0");
-      $xmlAddCustomButton->addAttribute("name", "bsauth_add");
+    $xmltr = $xmltable->addChild("tr"); 
+    $xmltr->addChild("td");
+    $xmlform= $xmltr->addChild("td")->addChild("form");
+    $xmlform->addAttribute("method","post");
+    $xmlAddCustomButton = $xmlform->addChild("Button",__("Add Custom", "BlaatLogin"));
+    $xmlAddCustomButton->addAttribute("value" , $preConfiguredService->plugin_id."-0");
+    $xmlAddCustomButton->addAttribute("name", "bsauth_add");
 
-    $DEBUG = true;
-    if ($DEBUG) {    
-      echo "<pre>"; print_r($preConfiguredServices); echo "</pre>";
-    }
 
     usort($configuredServices, "self::sortServices"); 
     $xmlroot->addChild("br");
