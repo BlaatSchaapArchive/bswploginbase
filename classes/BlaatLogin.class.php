@@ -211,6 +211,10 @@
       $xmltr->addChild("td", $configuredService->display_name);
 
       $xmltr = $xmltable->addChild("tr");
+      $xmltr->addChild("th", __("Enabled","BlaatLogin"));
+      $xmltr->addChild("td", $configuredService->enabled ? __("Yes") : __("No") ); 
+
+      $xmltr = $xmltable->addChild("tr");
       $xmltr->addChild("th", __("Button Preview","BlaatLogin"));
       self::generateButton($configuredService, $xmltr->addChild("td"));
 
@@ -256,6 +260,7 @@
 
     
     $xmllogo = $xmlbutton->addChild("span"," "); //HTML5/XHTML incompatibility, no <span /> allowed?
+                                                  // might not be needed with the new generation code
     $xmllogo->addAttribute("class", "bs-auth-btn-logo");
     $xmllogo->addAttribute("style", "background-image:url(\"" .$configuredService->icon. "\");");
   
