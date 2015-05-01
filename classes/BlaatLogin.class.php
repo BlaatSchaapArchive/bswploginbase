@@ -1,6 +1,7 @@
 <?php
 
   class BlaatLogin{
+//------------------------------------------------------------------------------
     function init(){
     // we cannot use self:: in these function calls
     // but it can be done elsewhere
@@ -26,17 +27,17 @@
 
 
     }
-
+//------------------------------------------------------------------------------
     function enqueueAdminCSS(){
       wp_register_style("BlaatLoginConfig" , plugin_dir_url(__FILE__) . "../css/BlaatLoginConfig.css");
       wp_enqueue_style( "BlaatLoginConfig");
     }
-
+//------------------------------------------------------------------------------
     function generatePageConfigPage($echo=true){
       //TODO implement me
     }
 
-
+//------------------------------------------------------------------------------
     function displayUpdatedNotice() { 
       // sample code from WordPress Codex
       // should this be rewritten?
@@ -49,7 +50,7 @@
     }
 
 
-
+//------------------------------------------------------------------------------
     function generateServiceConfigPage($echo=true){
       $edit   = isset($_POST['bsauth_edit']);
       $delete   = isset($_POST['bsauth_delete']);
@@ -66,6 +67,17 @@
         $service->setConfig($service_id);        
         self::displayUpdatedNotice();
       }
+
+      if (isset($_POST["bsauth_add_save"])) {
+        global $BSAUTH_SERVICES;
+        $plugin_id = $_POST['plugin_id'];
+        unset($_POST['plugin_id']);
+        unset($_POST['bsauth_add_save']);
+        $service = $BSAUTH_SERVICES[$plugin_id];
+        $service->addConfig();        
+        self::displayUpdatedNotice();
+      }
+
 
       // rewrite?
       if ($edit) {
@@ -104,13 +116,13 @@
   function generatePageSetupAddPage($plugin_id, $config_id){
     global $BSAUTH_SERVICES;
     $service = $BSAUTH_SERVICES[$plugin_id];
+
     if ($config_id) {
       $service_id = $service->addPreconfiguredService($config_id);
       self::generatePageSetupEditPage($plugin_id, $service_id);
       // TODO: possibly hide preconfigured values for preconfigures services
     } else {
-      //BlaatSchaap::GenerateOptions($service->getConfigOptions());
-      BlaatSchaap::GenerateOptions($service->getConfigOptions(), NULL, __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_add_save");
+      BlaatSchaap::GenerateOptions($service->getConfigOptions(),  NULL , __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_add_save");
     }
   }
 //------------------------------------------------------------------------------
@@ -158,8 +170,6 @@
       $xmltr = $xmltable->addChild("tr");
       $xmltr->addChild("th", __("Service","BlaatLogin"));
 
-
-      //$xmltd=   
       $xmlform= $xmltr->addChild("td")->addChild("form");
       $xmlform->addAttribute("method","post");
       $xmlselect = $xmlform->addChild("select");
@@ -167,18 +177,15 @@
       foreach ($plugin->getPreConfiguredServices() as $preConfiguredService) {
       //$preConfiguredService
         $xmloption = $xmlselect->addChild("option", $preConfiguredService->display_name );  
-
         $xmloption->addAttribute("value" , $preConfiguredService->plugin_id."-".$preConfiguredService->service_id);
       }
-      $xmlform->addChild("Button",__("Save"));
-      
-
-
+      $xmlform->addChild("Button",__("Add"));
     }
-
-
-    
-
+      $xmlform= $xmltr->addChild("td")->addChild("form");
+      $xmlform->addAttribute("method","post");
+      $xmlAddCustomButton = $xmlform->addChild("Button",__("Add Custon", "BlaatLogin"));
+      $xmlAddCustomButton->addAttribute("value" , $preConfiguredService->plugin_id."-0");
+      $xmlAddCustomButton->addAttribute("name", "bsauth_add");
 
     $DEBUG = true;
     if ($DEBUG) {    
@@ -236,8 +243,6 @@
 
     }
   return BlaatSchaap::xml2html($xmlroot); 
-    //echo $xmlroot->AsXML();
-    //return $xmlroot;
   }
 //------------------------------------------------------------------------------
   function generateButton($configuredService, $xmlroot, $action=NULL){
@@ -262,11 +267,12 @@
     
   }
 
-
+//------------------------------------------------------------------------------
   function sortServices($a, $b) {
     if ($a->order == $b->order) return 0;
     return ($a->order < $b->order) ? -1 : 1;
   }
+//------------------------------------------------------------------------------
 }
 
   
