@@ -17,6 +17,7 @@ if (!isset($BSAUTH_SERVICES)) $BSAUTH_SERVICES = array();
 require_once("classes/BlaatLogin.class.php");
 require_once("classes/BlaatLoginService.class.php");
 add_action("admin_menu",            "BlaatLogin::init");
+register_activation_hook(__FILE__,"BlaatLogin::install");
 
 
 //------------------------------------------------------------------------------

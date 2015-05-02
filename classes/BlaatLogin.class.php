@@ -2,10 +2,36 @@
 
   class BlaatLogin{
 //------------------------------------------------------------------------------
-    function init(){
-    // we cannot use self:: in these function calls
-    // but it can be done elsewhere
+  public function  install() {
+    global $wpdb;
 
+    // dbver in sync with plugin ver
+    $dbver = 1;
+    $live_dbver = get_option( "blaat_login_dbversion" );
+    
+    if (($dbver != $live_dbver) || get_option("bs_debug_updatedb") ) {
+      require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+      
+      $table_name = $wpdb->prefix . "bs_login_generic_options";
+      $query = "CREATE TABLE $table_name (
+                `login_options_id` INT NOT NULL AUTO_INCREMENT   ,
+                `sortorder` INT NOT NULL,
+                `enabled` BOOLEAN NOT NULL DEFAULT TRUE ,
+                `display_name` TEXT NOT NULL ,
+                `display_order` INT NOT NULL DEFAULT 1,
+                `custom_icon_url` TEXT NULL DEFAULT NULL,
+                `custom_icon_filename` TEXT NULL DEFAULT NULL,
+                `custom_icon_enabled` BOOLEAN DEFAULT FALSE,
+                `default_icon`  TEXT NULL DEFAULT NULL,
+                `auto_register` BOOL NOT NULL DEFAULT FALSE,
+                PRIMARY KEY  (login_options_id)
+                );";
+      dbDelta($query);
+      }
+    }
+
+    function init(){
+    // NOTE we cannot use self:: in function calls outside the class
 
     if (!BlaatSchaap::isPageRegistered('blaat_plugins')){
       add_menu_page('BlaatSchaap', 'BlaatSchaap', 'manage_options', 'blaat_plugins', 'blaat_plugins_page');
@@ -51,6 +77,51 @@
 
 
 //------------------------------------------------------------------------------
+  public function getMaxOrder(){
+    global $wpdb;
+    $table_name = $wpdb->prefix . "bs_login_generic_options";
+    return $wpdb->get_var( "SELECT MAX(sortorder) FROM $table_name");
+  }
+//------------------------------------------------------------------------------
+  public function moveUp($login_options_id){
+    global $wpdb;
+    $table_name = $wpdb->prefix . "bs_login_generic_options";
+    $query = $wpdb->prepare("SELECT sortorder FROM $table_name WHERE login_options_id = %d",$login_options_id);
+    $current_order =  $wpdb->get_var($query);
+    $query = $wpdb->update($table_name, array("sortorder" => $current_order), array("sortorder" => $current_order + 1) );
+    $query = $wpdb->update($table_name, array("sortorder" => $display_order + 1), array("login_options_id" => $login_options_id) );
+  }
+//------------------------------------------------------------------------------
+  public function moveDown($login_options_id){
+    global $wpdb;
+    $table_name = $wpdb->prefix . "bs_login_generic_options";
+    $query = $wpdb->prepare("SELECT sortorder FROM $table_name WHERE login_options_id = %d",$login_options_id);
+    $current_order =  $wpdb->get_var($query);
+    $query = $wpdb->update($table_name, array("sortorder" => $current_order), array("sortorder" => $current_order - 1) );
+    $query = $wpdb->update($table_name, array("sortorder" => $display_order - 1), array("login_options_id" => $login_options_id) );
+  }
+
+
+//------------------------------------------------------------------------------
+    function addConfig($data=NULL){
+      global $wpdb;
+      $table_name = $wpdb->prefix . "bs_login_generic_options";
+      
+      if ($data==NULL){  
+        $data=array();
+        $data['enabled'] = $_POST['enabled']; 
+        unset($_POST['enabled']);
+        $data['display_name'] = $_POST['display_name']; 
+        unset($_POST['display_name']);
+      }
+
+      $data['sortorder'] = 1 + self::getMaxOrder() ;
+
+      $wpdb->insert($table_name,$data);
+      return $wpdb->insert_id;
+
+    }
+//------------------------------------------------------------------------------
     function generateServiceConfigPage($echo=true){
       $edit   = isset($_POST['bsauth_edit']);
       $delete   = isset($_POST['bsauth_delete']);
@@ -74,6 +145,7 @@
         unset($_POST['plugin_id']);
         unset($_POST['bsauth_add_save']);
         $service = $BSAUTH_SERVICES[$plugin_id];
+        $_POST['login_options_id']=self::addConfig();
         $service->addConfig();        
         self::displayUpdatedNotice();
       }
@@ -104,6 +176,7 @@
        if ( isset($_POST['bsauth_add'])){
           $login = explode ("-", $_POST['bsauth_add']);
           $_SESSION['bsauth_add']=$_POST['bsauth_add'];
+          unset($_POST['bsauth_add']);
         } else {
           $login = explode ("-", $_SESSION['bsauth_add']);
         }
