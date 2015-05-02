@@ -121,6 +121,20 @@
       return $wpdb->insert_id;
 
     }
+    function setConfig(){
+      global $wpdb;
+      $table_name = $wpdb->prefix . "bs_login_generic_options";
+      $login_options_id = $_POST['login_options_id'];
+      unset($_POST['login_options_id']);
+      $globalconfig = array();
+      $globalconfig['enabled'] = $_POST['enabled'];
+      unset($_POST['enabled']);
+      $globalconfig['display_name'] = $_POST['display_name'];
+      unset($_POST['display_name']);
+      $globalconfig['auto_register'] = $_POST['auto_register'];
+      unset($_POST['auto_register']);
+      $query = $wpdb->update($table_name, $globalconfig, array("login_options_id" => $login_options_id) );
+    }
 //------------------------------------------------------------------------------
     function generateServiceConfigPage($echo=true){
       $edit   = isset($_POST['bsauth_edit']);
@@ -130,12 +144,11 @@
       if (isset($_POST["bsauth_edit_save"])) {
         global $BSAUTH_SERVICES;
         $plugin_id = $_POST['plugin_id'];
-        $service_id = $_POST['service_id'];
         unset($_POST['plugin_id']);
-        unset($_POST['service_id']);
         unset($_POST['bsauth_edit_save']);
         $service = $BSAUTH_SERVICES[$plugin_id];
-        $service->setConfig($service_id);        
+        self::setconfig();
+        $service->setConfig();        
         self::displayUpdatedNotice();
       }
 
