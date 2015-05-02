@@ -83,22 +83,22 @@
     return $wpdb->get_var( "SELECT MAX(sortorder) FROM $table_name");
   }
 //------------------------------------------------------------------------------
-  public function moveUp($login_options_id){
-    global $wpdb;
-    $table_name = $wpdb->prefix . "bs_login_generic_options";
-    $query = $wpdb->prepare("SELECT sortorder FROM $table_name WHERE login_options_id = %d",$login_options_id);
-    $current_order =  $wpdb->get_var($query);
-    $query = $wpdb->update($table_name, array("sortorder" => $current_order), array("sortorder" => $current_order + 1) );
-    $query = $wpdb->update($table_name, array("sortorder" => $display_order + 1), array("login_options_id" => $login_options_id) );
-  }
-//------------------------------------------------------------------------------
   public function moveDown($login_options_id){
     global $wpdb;
     $table_name = $wpdb->prefix . "bs_login_generic_options";
     $query = $wpdb->prepare("SELECT sortorder FROM $table_name WHERE login_options_id = %d",$login_options_id);
     $current_order =  $wpdb->get_var($query);
+    $query = $wpdb->update($table_name, array("sortorder" => $current_order), array("sortorder" => $current_order + 1) );
+    $query = $wpdb->update($table_name, array("sortorder" => $current_order + 1), array("login_options_id" => $login_options_id) );
+  }
+//------------------------------------------------------------------------------
+  public function moveUp($login_options_id){
+    global $wpdb;
+    $table_name = $wpdb->prefix . "bs_login_generic_options";
+    $query = $wpdb->prepare("SELECT sortorder FROM $table_name WHERE login_options_id = %d",$login_options_id);
+    $current_order =  $wpdb->get_var($query);
     $query = $wpdb->update($table_name, array("sortorder" => $current_order), array("sortorder" => $current_order - 1) );
-    $query = $wpdb->update($table_name, array("sortorder" => $display_order - 1), array("login_options_id" => $login_options_id) );
+    $query = $wpdb->update($table_name, array("sortorder" => $current_order - 1), array("login_options_id" => $login_options_id) );
   }
 
 
@@ -149,6 +149,10 @@
         $service->addConfig();        
         self::displayUpdatedNotice();
       }
+
+      if (isset($_POST["bsauth_moveup"])) self::moveUp($_POST["bsauth_moveup"]);
+      if (isset($_POST["bsauth_movedown"])) self::moveDown($_POST["bsauth_movedown"]);
+    
 
 
       // rewrite?
@@ -211,6 +215,10 @@
     global $BSAUTH_SERVICES;
     $configuredServices = array();
     $preConfiguredServices = array();
+
+
+    
+
     $xmlroot = new SimpleXMLElement('<div />');
 
     $xmlroot->addChild("h1", __("BlaatLogin Service Configuration","BlaatLogin"));
@@ -269,6 +277,8 @@
     $xmlEditServices->addAttribute("class", "ServicesList");
     $xmlEditServices->addChild("h2",__("Edit services","BlaatLogin"));
 
+
+    $maxOrder = self::getMaxOrder();
     foreach ($configuredServices as $configuredService) {
       $xmlService = $xmlEditServices->addChild("form");
       $xmlService->addAttribute("method","post");
@@ -296,11 +306,15 @@
       $xmlBtn = $xmltr->addChild("td");
       $xmlUpBtn =  $xmlBtn->addChild("button", __("Move Up","BlaatLogin"));
       $xmlUpBtn->addAttribute("name", "bsauth_moveup");
-      $xmlUpBtn->addAttribute("value", $configuredService->plugin_id ."-". $configuredService->service_id);
+      $xmlUpBtn->addAttribute("value", $configuredService->login_options_id);
+      // Note: order is decreasing, so moving up is lower sort order value
+      if ($configuredService->order==1) $xmlUpBtn->addAttribute("disabled", "true");
       $xmlUpBtn->addAttribute("class", "BlaatLoginConfigButton");
       $xmlDownBtn  =$xmlBtn->addChild("button", __("Move Down","BlaatLogin"));
       $xmlDownBtn->addAttribute("name", "bsauth_movedown");
-      $xmlDownBtn->addAttribute("value", $configuredService->plugin_id ."-". $configuredService->service_id);
+      $xmlDownBtn->addAttribute("value", $configuredService->login_options_id);
+      // Note: order is decreasing, so moving down is higher sort order value
+      if ($configuredService->order==$maxOrder) $xmlDownBtn->addAttribute("disabled", "true");
       $xmlDownBtn->addAttribute("class", "BlaatLoginConfigButton");
 
       $xmltr = $xmltable->addChild("tr");
