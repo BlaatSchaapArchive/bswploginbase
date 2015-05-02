@@ -142,22 +142,22 @@
       $add   = isset($_POST['bsauth_add']);
 
       if (isset($_POST["bsauth_edit_save"])) {
-        global $BSAUTH_SERVICES;
+        global $BSLOGIN_PLUGINS;
         $plugin_id = $_POST['plugin_id'];
         unset($_POST['plugin_id']);
         unset($_POST['bsauth_edit_save']);
-        $service = $BSAUTH_SERVICES[$plugin_id];
-        self::setconfig();
-        $service->setConfig();        
+        $plugin = $BSLOGIN_PLUGINS[$plugin_id];
+        self::setconfig();      // save generic options
+        $plugin->setConfig();  // sae plugin options      
         self::displayUpdatedNotice();
       }
 
       if (isset($_POST["bsauth_add_save"])) {
-        global $BSAUTH_SERVICES;
+        global $BSLOGIN_PLUGINS;
         $plugin_id = $_POST['plugin_id'];
         unset($_POST['plugin_id']);
         unset($_POST['bsauth_add_save']);
-        $service = $BSAUTH_SERVICES[$plugin_id];
+        $service = $BSLOGIN_PLUGINS[$plugin_id];
         $_POST['login_options_id']=self::addConfig();
         $service->addConfig();        
         self::displayUpdatedNotice();
@@ -204,8 +204,8 @@
     }
 //------------------------------------------------------------------------------
   function generatePageSetupAddPage($plugin_id, $config_id){
-    global $BSAUTH_SERVICES;
-    $service = $BSAUTH_SERVICES[$plugin_id];
+    global $BSLOGIN_PLUGINS;
+    $service = $BSLOGIN_PLUGINS[$plugin_id];
 
     if ($config_id) {
       $service_id = $service->addPreconfiguredService($config_id);
@@ -217,15 +217,15 @@
   }
 //------------------------------------------------------------------------------
   function generatePageSetupEditPage($plugin_id, $service_id){
-    global $BSAUTH_SERVICES;
-    $service = $BSAUTH_SERVICES[$plugin_id];
+    global $BSLOGIN_PLUGINS;
+    $service = $BSLOGIN_PLUGINS[$plugin_id];
     BlaatSchaap::GenerateOptions($service->getConfigOptions(), $service->getConfig($service_id), __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_edit_save");
   }
 //------------------------------------------------------------------------------
   function generatePageSetupDeletePage($plugin_id, $service_id){}
 //------------------------------------------------------------------------------
   function generatePageSetupOverviewPage(){
-    global $BSAUTH_SERVICES;
+    global $BSLOGIN_PLUGINS;
     $configuredServices = array();
     $preConfiguredServices = array();
 
@@ -242,7 +242,7 @@
     $xmlAddServices->addChild("h2",__("Add services","BlaatLogin"));
 
 
-    foreach ($BSAUTH_SERVICES as $plugin_id =>$plugin) {
+    foreach ($BSLOGIN_PLUGINS as $plugin_id =>$plugin) {
       $configuredServices_new = array_merge ( $configuredServices , 
         $plugin->getServices(false));
       $configuredServices=$configuredServices_new;

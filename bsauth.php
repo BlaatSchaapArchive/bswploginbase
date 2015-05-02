@@ -12,7 +12,7 @@ License: BSD
 
 
 //------------------------------------------------------------------------------
-if (!isset($BSAUTH_SERVICES)) $BSAUTH_SERVICES = array();
+if (!isset($BSLOGIN_PLUGINS)) $BSLOGIN_PLUGINS = array();
 
 require_once("classes/BlaatLogin.class.php");
 require_once("classes/BlaatLoginService.class.php");
@@ -106,9 +106,9 @@ if (!function_exists("bsauth_display")) {
 // When a WordPress user is deleted, remove any external linked accounts
 if (!function_exists("bsauth_delete_user")) {
   function bsauth_delete_user($user_id) {
-    global $BSAUTH_SERVICES;
+    global $BSLOGIN_PLUGINS;
     // For each service, delete the linked service
-    foreach ($BSAUTH_SERVICES as $service) {
+    foreach ($BSLOGIN_PLUGINS as $service) {
       $service->Delete($user_id);
     }
   }
@@ -284,7 +284,7 @@ if (!function_exists("blaat_plugins_auth_page")) {
 //------------------------------------------------------------------------------
 if (!function_exists("bsauth_view")) {
   function bsauth_view(){
-    global $BSAUTH_SERVICES;
+    global $BSLOGIN_PLUGINS;
     global $wpdb;
 
     if (isset($_SESSION['bsauth_display_message'])) {
@@ -337,7 +337,7 @@ if (!function_exists("bsauth_view")) {
         echo "<form action='".blaat_get_current_url()."' method='post'>";
 
         $buttons = array();
-        foreach ($BSAUTH_SERVICES as $service) {
+        foreach ($BSLOGIN_PLUGINS as $service) {
           $buttons_new = array_merge ( $buttons , 
             $service->getButtons());
           $buttons=$buttons_new;
@@ -368,7 +368,7 @@ if (!function_exists("bsauth_view")) {
         $buttonsLinked   = array();      
         $buttonsUnlinked = array();
         
-        foreach ($BSAUTH_SERVICES as $bs_service) {
+        foreach ($BSLOGIN_PLUGINS as $bs_service) {
           $buttons = $bs_service->getButtonsLinked($user->ID);
        
           $buttonsLinked_new = array_merge ( $buttonsLinked , $buttons['linked'] );
@@ -474,7 +474,7 @@ if (!(function_exists("bsauth_process"))){
       if (!isset($_SESSION['count'])) $_SESSION['count']=0;
       $_SESSION['count']++;
 
-      global $BSAUTH_SERVICES;
+      global $BSLOGIN_PLUGINS;
       global $wpdb;
       $user = wp_get_current_user();
 
@@ -512,7 +512,7 @@ if (!(function_exists("bsauth_process"))){
 
         $plugin_id = $link[0];
         $link_id = $link[1];
-        $plugin = $BSAUTH_SERVICES[$plugin_id];
+        $plugin = $BSLOGIN_PLUGINS[$plugin_id];
 
         $status = $plugin->Link($link_id);
         switch ($status) {
@@ -537,7 +537,7 @@ if (!(function_exists("bsauth_process"))){
 
         $plugin_id = $unlink[0];
         $link_id = $unlink[1];
-        $plugin = $BSAUTH_SERVICES[$plugin_id];
+        $plugin = $BSLOGIN_PLUGINS[$plugin_id];
         if ($plugin->Unlink($link_id)) {
           $_SESSION['bsauth_display_message'] = sprintf( __("You are now unlinked from %s.", "blaat_auth"), $_SESSION['display_name'] );
         } else {
@@ -564,7 +564,7 @@ if (!(function_exists("bsauth_process"))){
 
 
         if (isset($plugin_id) && isset($login_id)) {
-          $service = $BSAUTH_SERVICES[$plugin_id];
+          $service = $BSLOGIN_PLUGINS[$plugin_id];
           if ($service!=null) {
             $_SESSION['bsauth_display_message'] =$service->Login($login_id);
             $result = $service->Login($login_id);
@@ -628,7 +628,7 @@ if (!(function_exists("bsauth_process"))){
 
         
         if ($_SESSION['bsauth_fetch_data']) {
-          $service = $BSAUTH_SERVICES[$plugin_id];
+          $service = $BSLOGIN_PLUGINS[$plugin_id];
           if($service) {
             $new_user = $service->getRegisterData($login_id);
           } 
@@ -656,8 +656,8 @@ if (!(function_exists("bsauth_process"))){
               $_SESSION['bsauth_display_message'] = sprintf( __("Welcome to %s.", "blaat_auth"), get_bloginfo('name') );
             } else {
 
-              global $BSAUTH_SERVICES;
-              $serviceToLink = $BSAUTH_SERVICES[$plugin_id];
+              global $BSLOGIN_PLUGINS;
+              $serviceToLink = $BSLOGIN_PLUGINS[$plugin_id];
               if ($serviceToLink) {
                 if ($serviceToLink->Link($login_id)) {
                   $_SESSION['bsauth_display_message'] = sprintf( __("Welcome to %s.", "blaat_auth"), get_bloginfo('name') );
