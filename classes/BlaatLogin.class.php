@@ -136,6 +136,13 @@
       $query = $wpdb->update($table_name, $globalconfig, array("login_options_id" => $login_options_id) );
     }
 //------------------------------------------------------------------------------
+    function delConfig(){
+      global $wpdb;
+      $table_name = $wpdb->prefix . "bs_login_generic_options";
+      $login_options_id = $_POST['login_options_id'];
+      $wpdb->delete($table_name, array("login_options_id" => $login_options_id) );
+    }
+//------------------------------------------------------------------------------
     function generateServiceConfigPage($echo=true){
       $edit   = isset($_POST['bsauth_edit']);
       $delete   = isset($_POST['bsauth_delete']);
@@ -162,6 +169,18 @@
         $service->addConfig();        
         self::displayUpdatedNotice();
       }
+
+      if (isset($_POST["bsauth_delete_save"])) {
+        global $BSLOGIN_PLUGINS;
+        $plugin_id = $_POST['plugin_id'];
+        unset($_POST['plugin_id']);
+        unset($_POST['bsauth_add_save']);
+        $service = $BSLOGIN_PLUGINS[$plugin_id];
+        $_POST['login_options_id']=self::delConfig();
+        $service->delConfig();        
+        self::displayUpdatedNotice();
+      }
+
 
       if (isset($_POST["bsauth_moveup"])) self::moveUp($_POST["bsauth_moveup"]);
       if (isset($_POST["bsauth_movedown"])) self::moveDown($_POST["bsauth_movedown"]);
@@ -205,14 +224,14 @@
 //------------------------------------------------------------------------------
   function generatePageSetupAddPage($plugin_id, $config_id){
     global $BSLOGIN_PLUGINS;
-    $service = $BSLOGIN_PLUGINS[$plugin_id];
+    $plugin = $BSLOGIN_PLUGINS[$plugin_id];
 
     if ($config_id) {
       $service_id = $service->addPreconfiguredService($config_id);
       self::generatePageSetupEditPage($plugin_id, $service_id);
       // TODO: possibly hide preconfigured values for preconfigures services
     } else {
-      BlaatSchaap::GenerateOptions($service->getConfigOptions(),  NULL , __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_add_save");
+      BlaatSchaap::GenerateOptions($plugin->getConfigOptions(),  NULL , __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_add_save");
     }
   }
 //------------------------------------------------------------------------------
@@ -222,7 +241,45 @@
     BlaatSchaap::GenerateOptions($service->getConfigOptions(), $service->getConfig($service_id), __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_edit_save");
   }
 //------------------------------------------------------------------------------
-  function generatePageSetupDeletePage($plugin_id, $service_id){}
+  function generatePageSetupDeletePage($plugin_id, $service_id){
+    // TODO: MESSAGE are you sure?
+    $xmlroot = new SimpleXMLElement('<div />');
+    $xmlroot->addChild("h1", __("BlaatLogin Service Configuration","BlaatLogin"));
+
+    global $BSLOGIN_PLUGINS;
+    $plugin = $BSLOGIN_PLUGINS[$plugin_id];
+    $config = $plugin->getConfig($service_id);    
+    $login_options_id=$config['login_options_id'];
+    $message = sprintf( __("Are you sure you want to delete %s", "blaat_auth"), $config['display_name'] );
+
+    $xmlroot->addChild("div", $message);
+    $xmlform = $xmlroot->addChild("form");
+    $xmlform->addAttribute("method","post");
+    $xmlplugin_id = $xmlform->addChild("input");
+    $xmlplugin_id->addAttribute("name", "plugin_id");
+    $xmlplugin_id->addAttribute("value", $plugin_id);
+    $xmlplugin_id->addAttribute("type", "hidden");
+
+    $xmlservice_id = $xmlform->addChild("input");
+    $xmlservice_id->addAttribute("name", "service_id");
+    $xmlservice_id->addAttribute("value", $service_id);
+    $xmlservice_id->addAttribute("type", "hidden");
+
+
+    $xmlservice_id = $xmlform->addChild("input");
+    $xmlservice_id->addAttribute("name", "login_options_id");
+    $xmlservice_id->addAttribute("value", $login_options_id);
+    $xmlservice_id->addAttribute("type", "hidden");
+
+
+
+    $xmlyes = $xmlform->addChild("button", __("Yes"));
+    $xmlyes->addAttribute("name", "bsauth_delete_save");
+    //$xmlyes->addAttribute("value", $plugin_id ."-". $service_id);
+    $xmlno  = $xmlform->addChild("button", __("No"));
+    BlaatSchaap::xml2html($xmlroot);
+
+  }
 //------------------------------------------------------------------------------
   function generatePageSetupOverviewPage(){
     global $BSLOGIN_PLUGINS;
