@@ -37,17 +37,19 @@
       add_menu_page('BlaatSchaap', 'BlaatSchaap', 'manage_options', 'blaat_plugins', 'blaat_plugins_page');
     }
 
-      add_submenu_page('blaat_plugins' ,  __('BlaatLogin Services',"blaat_auth"),   
-                                          __('BlaatLogin Services',"blaat_auth"), 
+      add_submenu_page('blaat_plugins' ,  __('BlaatLogin Configuration',"BlaatLogin"),   
+                                          __('BlaatLogin Configuration',"BlaatLogin"), 
+                                          'manage_options', 
+                                          'blaatlogin_configure_pages', 
+                                          'BlaatLogin::generateGenericConfigPage' );
+
+      add_submenu_page('blaat_plugins' ,  __('BlaatLogin Services',"BlaatLogin"),   
+                                          __('BlaatLogin Services',"BlaatLogin"), 
                                           'manage_options', 
                                           'blaatlogin_configure_services', 
                                           'BlaatLogin::generateServiceConfigPage' );
 
-      add_submenu_page('blaat_plugins' ,  __('BlaatLogin Pages',"blaat_auth"),   
-                                          __('BlaatLogin Pages',"blaat_auth"), 
-                                          'manage_options', 
-                                          'blaatlogin_configure_pages', 
-                                          'BlaatLogin::generatePageConfigPage' );
+
 
       add_action("admin_enqueue_scripts", "BlaatLogin::enqueueAdminCSS" );
 
@@ -59,7 +61,7 @@
       wp_enqueue_style( "BlaatLoginConfig");
     }
 //------------------------------------------------------------------------------
-    function generatePageConfigPage($echo=true){
+    function generateGenericConfigPage(){
       //TODO implement me
     }
 
@@ -227,7 +229,7 @@
     $plugin = $BSLOGIN_PLUGINS[$plugin_id];
 
     if ($config_id) {
-      $service_id = $service->addPreconfiguredService($config_id);
+      $service_id = $plugin->addPreconfiguredService($config_id);
       self::generatePageSetupEditPage($plugin_id, $service_id);
       // TODO: possibly hide preconfigured values for preconfigures services
     } else {
@@ -250,7 +252,7 @@
     $plugin = $BSLOGIN_PLUGINS[$plugin_id];
     $config = $plugin->getConfig($service_id);    
     $login_options_id=$config['login_options_id'];
-    $message = sprintf( __("Are you sure you want to delete %s", "blaat_auth"), $config['display_name'] );
+    $message = sprintf( __("Are you sure you want to delete %s", "BlaatLogin" ), $config['display_name'] );
 
     $xmlroot->addChild("div", $message);
     $xmlform = $xmlroot->addChild("form");

@@ -1,14 +1,15 @@
 <?php
 
 /*
-Plugin Name: BlaatSchaap SSO Base
+Plugin Name: BlaatLogin Base
 Plugin URI: http://code.blaatschaap.be
-Description: Base code for all BlaatSchaap plugins
+Description: Common code for all BlaatLogin plugins
 Version: 0.1
 Author: André van Schoubroeck
-Author URI: http://andre.blaatschaap.be
+Author URI: http://www.andrevanschoubroeck.name
 License: BSD
 */
+
 
 
 //------------------------------------------------------------------------------
@@ -16,6 +17,7 @@ if (!isset($BSLOGIN_PLUGINS)) $BSLOGIN_PLUGINS = array();
 
 require_once("classes/BlaatLogin.class.php");
 require_once("classes/BlaatLoginService.class.php");
+require_once("classes/AuthService.class.php");
 add_action("admin_menu",            "BlaatLogin::init");
 register_activation_hook(__FILE__,"BlaatLogin::install");
 
@@ -109,7 +111,9 @@ if (!function_exists("bsauth_delete_user")) {
     global $BSLOGIN_PLUGINS;
     // For each service, delete the linked service
     foreach ($BSLOGIN_PLUGINS as $service) {
-      $service->Delete($user_id);
+      //$service->Delete($user_id);
+      $service->delUser($user_id);
+
     }
   }
   // Call the delete user function when a WordPress user is deleted.
@@ -518,10 +522,12 @@ if (!(function_exists("bsauth_process"))){
         switch ($status) {
           case AuthStatus::LinkSuccess :
             $_SESSION['bsauth_display_message'] = sprintf( __("Your %s account has been linked", "blaat_auth"), $_SESSION['display_name'] );
-            if ($regging) unset($_SESSION['bsauth_register']);
+            unset ($_SESSION['bsauth_link']);
+            unset($_SESSION['bsauth_register']);
             break;
           case AuthStatus::LinkInUse :
             $_SESSION['bsauth_display_message'] = sprintf( __("Your %s account has is already linked to another local account", "blaat_auth"), $_SESSION['display_name'] );
+            unset ($_SESSION['bsauth_link']);
             break;
           default : 
             $_SESSION['bsauth_display_message'] = "Unkown status while attempting to link" . $status;
@@ -566,7 +572,6 @@ if (!(function_exists("bsauth_process"))){
         if (isset($plugin_id) && isset($login_id)) {
           $service = $BSLOGIN_PLUGINS[$plugin_id];
           if ($service!=null) {
-            $_SESSION['bsauth_display_message'] =$service->Login($login_id);
             $result = $service->Login($login_id);
             switch ($result) {
               case AuthStatus::Busy :
@@ -589,7 +594,7 @@ if (!(function_exists("bsauth_process"))){
                 // does this work now?
                 $_SESSION['bsauth_register'] = $_SESSION['bsauth_login'];
                 unset($_SESSION['bsauth_login']);
-                $_SESSION['bsauth_display_message'] = "TODO:: EXTERNAL SIGNUP"; 
+                //$_SESSION['bsauth_display_message'] = "TODO:: EXTERNAL SIGNUP"; 
                 break;
               case AuthStatus::Error : 
                 $_SESSION['bsauth_display_message'] = "Unkown error";
@@ -626,14 +631,16 @@ if (!(function_exists("bsauth_process"))){
           $local=false;
         }
 
-        
+        /* Deprecated code
         if ($_SESSION['bsauth_fetch_data']) {
           $service = $BSLOGIN_PLUGINS[$plugin_id];
           if($service) {
             $new_user = $service->getRegisterData($login_id);
           } 
         } 
-        
+        */        
+
+
         if (!isset($new_user)) $new_user = array()  ;
 
         if (isset($_POST['username'])) $new_user['user_login']= $_POST['username'];
