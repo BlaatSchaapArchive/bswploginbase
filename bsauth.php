@@ -77,31 +77,12 @@ if (!function_exists("bsauth_generate_button")) {
 //------------------------------------------------------------------------------
 if (!function_exists("bsauth_display")) {
   function bsauth_display($content) {
-    $login_page    = get_option('login_page');
-    $link_page     = get_option('link_page');
-    $register_page = get_option('register_page');
 
-    switch ($GLOBALS['post']->post_name) {
-      /*
-      case $login_page :
-        bsauth_login_display();
-        break;
-      case $link_page :
-        bsauth_link_display();
-        break;
-      case $register_page :
-       bsauth_register_display();
-        break;
-        */
-      case $login_page :
-      case $link_page :
-      case $register_page :
-       bsauth_view();
-        break;
-
-      default : 
-        return $content;
-    }
+    if (get_option("blaatlogin_page")==$GLOBALS['post']->post_name) 
+      bsauth_view();
+    else
+      return $content;
+    
   }
 }
 //------------------------------------------------------------------------------

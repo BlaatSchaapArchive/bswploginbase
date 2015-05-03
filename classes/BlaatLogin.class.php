@@ -33,6 +33,8 @@
     function init(){
     // NOTE we cannot use self:: in function calls outside the class
 
+
+
     if (!BlaatSchaap::isPageRegistered('blaat_plugins')){
       add_menu_page('BlaatSchaap', 'BlaatSchaap', 'manage_options', 'blaat_plugins', 'blaat_plugins_page');
     }
@@ -52,17 +54,133 @@
 
 
       add_action("admin_enqueue_scripts", "BlaatLogin::enqueueAdminCSS" );
+;
+      if (get_option("login_page") || get_option("register_page") || get_option("link_page")) {
+        add_submenu_page('blaat_plugins' ,  __('BlaatLogin Migration',"BlaatLogin"),   
+                                            __('BlaatLogin Migration',"BlaatLogin"), 
+                                            'manage_options', 
+                                            'blaatlogin_configure_migration', 
+                                            'BlaatLogin::generateMigrationPage' );
+        add_action( 'admin_notices', 'BlaatLogin::generateMigrationPageNotice' ); 
+      }
+
+      global $BSLOGIN_PLUGINS;
+      foreach ($BSLOGIN_PLUGINS as $plugin) {
+        if (method_exists($plugin, "init")) $plugin->init();
+      }  
+
 
 
     }
 //------------------------------------------------------------------------------
+    function generateMigrationPage(){
+      $xmlroot = new SimpleXMLElement('<div />');
+      $xmlroot->addChild("h1", __('BlaatLogin Migration',"BlaatLogin"));
+      if (isset($_POST['blaatlogin_page_migration'])) {
+
+        $blaatlogin_page = get_page_by_title($_POST["blaatlogin_page"]);
+        $blaatlogin_id = $blaatlogin_page->ID;
+
+        update_option("blaatlogin_page", $blaatlogin_page_id);
+        if (isset($_POST["blaatlogin_delete_other_pages"])){
+
+          $pages_to_delete = array();
+          if ($_POST['blaatlogin_page']!=get_option("login_page")) 
+            $pages_to_delete[]=get_option("login_page");
+          if ($_POST['blaatlogin_page']!=get_option("link_page")) 
+            $pages_to_delete[]=get_option("link_page");
+          if ($_POST['blaatlogin_page']!=get_option("register_page")) 
+            $pages_to_delete[]=get_option("register_page");
+
+          foreach ($pages_to_delete as $delete_me_title) {
+            $delete_me_page = get_page_by_title($delete_me_title);
+            $delete_me_id = $delete_me_page->ID;
+            wp_delete_post($delete_me_id);
+          }         
+        }
+
+        delete_option("login_page");
+        delete_option("link_page");
+        delete_option("register_page");
+
+        $xmlroot->addChild("div", __("Page migration completed.","BlaatLogin"));
+        $xmlroot->addChild("div", __("Please update your menus if required.","BlaatLogin"));
+        $xmlroot->addChild("div", __("Thank you for using BlaatLogin","BlaatLogin"));
+        
+      } else {
+
+        $xmlroot->addChild("div", __("In previous versions there where three 
+          distinct pages, 'link', 'login' and 'register'.  
+          These pages have been unified into a single page.","BlaatLogin"));
+        $xmlroot->addChild("div", __("Your configuration is still configured
+          for the distinct pages. Please select the page you wish to use for BlaatLogin.
+          The other pages can be deleted.","BlaatLogin"));
+        $xmlform = $xmlroot->addChild("form");
+        $xmlform->addAttribute("method","post");
+
+        $xmltable = $xmlform->addChild("table");
+        $xmltr    = $xmltable->addChild("tr");
+        $xmltr->addChild("th", __("BlaatLogin page", "BlaatLogin"));
+
+        $xmlselect = $xmltr->addChild("td")->addChild("select");
+        $xmlselect->addAttribute("name","blaatlogin_page");
+        $xmlselect->addAttribute("id","blaatlogin_page");
+        $xmloption = $xmlselect->addChild("option", get_option("login_page"));
+        $xmloption->addAttribute("value", get_option("login_page"));
+        $xmloption = $xmlselect->addChild("option", get_option("register_page"));
+        $xmloption->addAttribute("value", get_option("register_page"));
+        $xmloption = $xmlselect->addChild("option", get_option("link_page"));
+        $xmloption->addAttribute("value", get_option("link_page"));
+
+        $xmltr    = $xmltable->addChild("tr");
+        $xmltr->addChild("th", __("Delete other pages", "BlaatLogin"));
+        $xmlinput = $xmltr->addChild("td")->addChild("input");
+        $xmlinput->addAttribute("name","blaatlogin_delete_other_pages");
+        $xmlinput->addAttribute("value","1");
+        $xmlinput->addAttribute("type","checkbox");
+        $xmlinput->addAttribute("checked","1");
+
+        $xmltr    = $xmltable->addChild("tr");
+        $xmltr->addChild("th");
+        $xmlbutton = $xmltr->addChild("td")->addChild("button",__("Save"));
+        $xmlbutton->addAttribute("name","blaatlogin_page_migration");
+        $xmlbutton->addAttribute("value","1");
+      }
+      BlaatSchaap::xml2html($xmlroot);
+
+    }
+//------------------------------------------------------------------------------
+    function generateMigrationPageNotice(){
+      // TODO: how to get link to the page?
+      $class = "update-nag";
+      $href = "admin.php?page=blaatlogin_configure_migration";
+    	$message = sprintf(__("The structure of the pages generated by BlaatLogin has changed. Migration of settings is required. Please consult the <a href='%s'>migration settings</a>","BlaatLogin"), $href);
+      $title = __("BlaatLogin", "BlaatLogin");
+      echo"<div class=\"$class\"> <h1>$title</h1><p>$message</p></div>"; 
+    }
+//------------------------------------------------------------------------------
     function enqueueAdminCSS(){
-      wp_register_style("BlaatLoginConfig" , plugin_dir_url(__FILE__) . "../css/BlaatLoginConfig.css");
+      wp_register_style("BlaatLoginConfig" , plugin_dir_url(__DIR__) . "css/BlaatLoginConfig.css");
       wp_enqueue_style( "BlaatLoginConfig");
     }
 //------------------------------------------------------------------------------
     function generateGenericConfigPage(){
-      //TODO implement me
+      if (isset($_POST['blaatlogin_config_save'])) { 
+        update_option( "blaatlogin_page" , $_POST['blaatlogin_page']);
+      }
+
+      $GenericTab = new BlaatConfigTab("generic", 
+                      __("Generic configuration","blaat_oauth"));
+
+      $pageSelector = new BlaatConfigOption("blaatlogin_page",
+                    __("BlaatLogin Page","BlaatLogin"),"select", true);
+      BlaatSchaap::setupPageSelect($pageSelector);
+
+      $GenericTab->addOption($pageSelector);
+
+      BlaatSchaap::GenerateOptions(array($GenericTab),  NULL , __("BlaatLogin Generic Configuration","BlaatLogin"), "blaatlogin_config_save");
+
+
     }
 
 //------------------------------------------------------------------------------
