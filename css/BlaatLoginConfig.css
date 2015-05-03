@@ -1,0 +1,18 @@
+.BlaatLoginServiceConfig {
+  display: block;
+  float: left;
+  width: 320px;
+  height: 175px;
+  border: 1px solid black;
+  margin:10px;
+  border-radius: 10px;
+}
+
+.BlaatLoginConfigButton {
+  width:100px;
+}
+
+.ServicesList {
+  display: inline-block;
+  width: 100%;
+}
