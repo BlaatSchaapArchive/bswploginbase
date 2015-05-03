@@ -328,6 +328,7 @@ if (!function_exists("bsauth_view")) {
           $buttons=$buttons_new;
         }
 
+//        echo "<pre>DEBUG:\n"; print_r($buttons); echo "</pre>";
         usort($buttons, "bsauth_buttons_sort"); 
 
         foreach ($buttons as $button) {
