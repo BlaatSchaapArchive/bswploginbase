@@ -19,7 +19,7 @@ if (!interface_exists("AuthService")) {
 
     public function getButtonsLinked($id);
 
-    public function install();
+    //public function install();
 
   }
 }
