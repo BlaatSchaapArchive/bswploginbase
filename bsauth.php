@@ -18,8 +18,9 @@ if (!isset($BSLOGIN_PLUGINS)) $BSLOGIN_PLUGINS = array();
 require_once("classes/BlaatLogin.class.php");
 require_once("classes/BlaatLoginService.class.php");
 require_once("classes/AuthService.class.php");
+require_once("db.php");
 add_action("admin_menu",            "BlaatLogin::init");
-register_activation_hook(__FILE__,"BlaatLogin::install");
+register_activation_hook(__FILE__,"blaatlogin_install_database");
 
 
 //------------------------------------------------------------------------------
