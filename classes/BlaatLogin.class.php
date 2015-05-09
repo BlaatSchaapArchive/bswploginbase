@@ -152,8 +152,47 @@
       $pageSelector = new BlaatConfigOption("blaatlogin_page",
                     __("BlaatLogin Page","BlaatLogin"),"select", true);
       BlaatSchaap::setupPageSelect($pageSelector);
-
       $GenericTab->addOption($pageSelector);
+
+
+      $loginSelector = new BlaatConfigOption("blaatlogin_login_enabled",
+                    __("Login Enabled","BlaatLogin"),"select", true, get_option("blaatlogin_login_enabled"));
+      $loginSelector->addOption(new BlaatConfigSelectOption("Disabled",__("Disabled")));
+      $loginSelector->addOption(new BlaatConfigSelectOption("LocalOnly",__("Local Only","BlaatLogin")));
+      $loginSelector->addOption(new BlaatConfigSelectOption("RemoteOnly",__("Remote Only","BlaatLogin")));
+      $loginSelector->addOption(new BlaatConfigSelectOption("Both",__("Both","BlaatLogin")));
+      $GenericTab->addOption($loginSelector);
+
+      $registerSelector = new BlaatConfigOption("blaatlogin_register_enabled",
+                    __("Register Enabled","BlaatLogin"),"select", true, get_option("blaatlogin_register_enabled"));
+      $registerSelector->addOption(new BlaatConfigSelectOption("Disabled",__("Disabled")));
+      $registerSelector->addOption(new BlaatConfigSelectOption("LocalOnly",__("Local Only","BlaatLogin")));
+      $registerSelector->addOption(new BlaatConfigSelectOption("RemoteOnly",__("Remote Only","BlaatLogin")));
+      $registerSelector->addOption(new BlaatConfigSelectOption("Both",__("Both","BlaatLogin")));
+      $registerSelector->addOption(new BlaatConfigSelectOption("HonourGlobal",__("Honour global 'users_can_register'","BlaatLogin")));
+      $GenericTab->addOption($registerSelector);
+
+      $linkSelector = new BlaatConfigOption("blaatlogin_link_enabled",
+                    __("Link Enabled","BlaatLogin"),"select", true, get_option("blaatlogin_link_enabled"));
+      $linkSelector->addOption(new BlaatConfigSelectOption("Disabled",__("Disabled")));
+      $linkSelector->addOption(new BlaatConfigSelectOption("Enabled",__("Enabled")));
+      $GenericTab->addOption($linkSelector);
+
+      $fetchSelector = new BlaatConfigOption("blaatlogin_fetch_enabled",
+                    __("Fetch User Data","BlaatLogin"),"select", true, get_option("blaatlogin_fetch_enabled"));
+      $fetchSelector->addOption(new BlaatConfigSelectOption("Disabled",__("Disabled")));
+      $fetchSelector->addOption(new BlaatConfigSelectOption("Enabled",__("Enabled")));
+      $GenericTab->addOption($fetchSelector);
+
+
+      $autoSelector = new BlaatConfigOption("blaatlogin_auto_enabled",
+                    __("Attempt Auto Register","BlaatLogin"),"select", true, get_option("blaatlogin_auto_enabled"));
+      $autoSelector->addOption(new BlaatConfigSelectOption("Disabled",__("Disabled")));
+      $autoSelector->addOption(new BlaatConfigSelectOption("Enabled",__("Enabled")));
+      $GenericTab->addOption($autoSelector);
+
+
+
 
       BlaatSchaap::GenerateOptions(array($GenericTab),  NULL , __("BlaatLogin Generic Configuration","BlaatLogin"), "blaatlogin_config_save");
 
@@ -320,22 +359,28 @@
     }
   //------------------------------------------------------------------------------
     function generatePageSetupAddPage($plugin_id, $config_id){
-    global $BSLOGIN_PLUGINS;
-    $plugin = $BSLOGIN_PLUGINS[$plugin_id];
+      global $BSLOGIN_PLUGINS;
+      $plugin = $BSLOGIN_PLUGINS[$plugin_id];
 
-    if ($config_id) {
-      $service_id = $plugin->addPreconfiguredService($config_id);
-      self::generatePageSetupEditPage($plugin_id, $service_id);
-      // TODO: possibly hide preconfigured values for preconfigures services
-    } else {
-      BlaatSchaap::GenerateOptions($plugin->getConfigOptions(),  NULL , __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_add_save");
-    }
+      if ($config_id) {
+        $service_id = $plugin->addPreconfiguredService($config_id);
+        self::generatePageSetupEditPage($plugin_id, $service_id);
+        // TODO: possibly hide preconfigured values for preconfigures services
+      } else {
+        $configoptions = array();
+        self::getConfigOptions($configoptions);  
+        $plugin->getConfigOptions($configoptions);
+        BlaatSchaap::GenerateOptions($configoptions,  NULL , __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_add_save");
+      }
     }
   //------------------------------------------------------------------------------
     function generatePageSetupEditPage($plugin_id, $service_id){
-    global $BSLOGIN_PLUGINS;
-    $service = $BSLOGIN_PLUGINS[$plugin_id];
-    BlaatSchaap::GenerateOptions($service->getConfigOptions(), $service->getConfig($service_id), __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_edit_save");
+      global $BSLOGIN_PLUGINS;
+      $plugin = $BSLOGIN_PLUGINS[$plugin_id];
+      $configoptions = array();
+      self::getConfigOptions($configoptions);  
+      $plugin->getConfigOptions($configoptions);
+      BlaatSchaap::GenerateOptions($configoptions, $plugin->getConfig($service_id), __("BlaatLogin Service Configuration","BlaatLogin"),"bsauth_edit_save");
     }
   //------------------------------------------------------------------------------
     function generatePageSetupDeletePage($plugin_id, $service_id){
@@ -501,14 +546,288 @@
     return BlaatSchaap::xml2html($xmlroot); 
     }
   //------------------------------------------------------------------------------
-    function generateButton($configuredService, $xmlroot, $action=NULL){
+//------------------------------------------------------------------------------
+
+    function getConfigOptions(&$tabs){
+      // GENERIC FIELDS // TODO move to BlaatLogin
+      $GenericTab = new BlaatConfigTab("generic", 
+                      __("Generic configuration","blaat_oauth"));
+      $tabs[]=$GenericTab;
+
+      $GenericTab->addOption(new BlaatConfigOption("display_name",
+                      __("Display name","blaat_auth"),
+                      "text",true));
+
+      $GenericTab->addOption(new BlaatConfigOption("enabled",
+                      __("Enabled","blaat_auth"),
+                      "checkbox",false,true));
+
+      /* Not yet implemented, hiding the option
+      $GenericTab->addOption(new BlaatConfigOption("auto_register",
+                      __("Auto Register","blaat_auth"),
+                      "checkbox",false,true));
+      */
+    }
+//------------------------------------------------------------------------------
+    function generateLoginPage(){
+    global $BSLOGIN_PLUGINS;
+    $xmlroot = new SimpleXMLElement("<div />");
+
+    if (isset($_SESSION['bsauth_display_message'])) {
+      //echo "<div class=bsauth_message>".$_SESSION['bsauth_display_message']."</div>";
+      $xmlMessage = $xmlroot->addChild("div", $_SESSION['bsauth_display_message']);
+      $xmlMessage->addAttribute("class","bsauth_message");
+      unset($_SESSION['bsauth_display_message']);
+    }
+    $user = wp_get_current_user();
+
+      if (get_option("bs_debug")) {
+        /*
+        echo "DEBUG SESSION<pre>"; print_r($_SESSION); echo "</pre>";
+        echo "DEBUG POST<pre>"; print_r($_POST); echo "</pre>";
+        echo "DEBUG URL:<pre>" . blaat_get_current_url() . "</pre>";
+         */
+        $xmlroot->addChild("pre", "SESSION:\n" . var_export($_SESSION,true));
+        $xmlroot->addChild("pre", "POST   :\n" . var_export($_POST,true));
+      }
+
+      $logged    = is_user_logged_in();
+      $logging   = isset($_SESSION['bsauth_login'])   || isset($_POST['bsauth_login']);
+      $linking   = isset($_SESSION['bsauth_link'])    || isset($_POST['bsauth_link']);
+      $regging   = isset($_SESSION['bsauth_register'])|| isset($_POST['bsauth_register']);
+
+      if ($regging) {
+        $regging_local = (isset($_POST['bsauth_register']) 
+                          && $_POST['bsauth_register']=="local") ||
+                          (isset($_SESSION['bsauth_register']) 
+                          && $_SESSION['bsauth_register']=="local");
+
+      } else $regging_local = false;
+
+      $unlinking = isset($_POST['bsauth_unlink']);
+
+
+      $loginOptions = get_option("blaatlogin_login_enabled");
+      $registerOptions = get_option("blaatlogin_register_enabled");
+
+      // begin not loggedin, logging, linking,regging
+      if (! ($logged || $logging || $linking || $regging) ){
+
+
+
+        if (!($loginOptions=="Disabled")||($loginOptions=="RemoteOnly")) {
+          $xmlLocalLogin = $xmlroot->addChild("div");
+          $xmlLocalLogin->addAttribute("id","bsauth_local");
+          //echo "<div id='bsauth_local'>";
+          $xmlLocalLogin->addChild("p", __("Log in with a local account","BlaatLogin"));
+          //echo "<p>" .  __("Log in with a local account","blaat_auth") . "</p>" ; 
+          
+          
+          //wp_login_form();
+          /* 
+           * generating login form outselves, the SimpleXML way
+           * TODO: possibly in future version... write an XML/HTML class that has
+           * the simplicity of SimpleXML but the flexibibility of DOMDocument
+           * that way we can "import" snippets of HTML, such as the login form
+           * but can still add elements with a single class rather then the
+           * DOM way, where we first create an element and then add it.
+           */
+          $xmlLocalLoginForm = $xmlLocalLogin->addChild("form");
+          $xmlLocalLoginForm->addAttribute("method","post");
+          $xmlLocalLoginFormTable = $xmlLocalLoginForm->addChild("table");
+          
+          $xmlLocalLoginFormTableTr = $xmlLocalLoginFormTable->addChild("tr");
+          $xmlLocalLoginFormTableTr->addChild("th", __( 'Username' ));
+          $xmlLocalLoginUser = $xmlLocalLoginFormTableTr->addChild("td")->addChild("input");
+          $xmlLocalLoginUser->addAttribute("name", "log");
+          
+          $xmlLocalLoginFormTableTr = $xmlLocalLoginFormTable->addChild("tr");
+          $xmlLocalLoginFormTableTr->addChild("th", __( 'Password' ));
+          $xmlLocalLoginPass = $xmlLocalLoginFormTableTr->addChild("td")->addChild("input");
+          $xmlLocalLoginPass->addAttribute("name", "password");
+          $xmlLocalLoginPass->addAttribute("type", "password");
+          
+          $xmlLocalLoginFormTableTr = $xmlLocalLoginFormTable->addChild("tr");
+          $xmlLocalLoginFormTableTr->addChild("th");
+          $xmlLocalLoginSub = $xmlLocalLoginFormTableTr->addChild("td")->addChild("input");
+          $xmlLocalLoginSub->addAttribute("name", "wp-submit");
+          $xmlLocalLoginSub->addAttribute("type", "submit");
+          $xmlLocalLoginSub->addAttribute("value", __("Log in"));
+          
+          /*
+          ?>
+          <form method='post' action='<?php echo blaat_get_current_url(); ?>'>
+          
+          <button type='submit' value='local' name='bsauth_register'><?php
+            _e("Register"); ?></button> 
+          </form> 
+          <?php
+          echo "</div>";
+          */
+          // TODO ADD REGISTER BUTTON 
+        }
+
+        if (!($loginOptions=="Disabled")||($loginOptions=="LocalOnly")) {
+
+          $xmlRemoteLogin = $xmlroot->addChild("div");
+          $xmlRemoteLogin->addAttribute("id","bsauth_buttons");
+
+          //echo "<div id='bsauth_buttons'>";
+          //echo "<p>" . __("Log in with","blaat_auth") . "</p>";
+          $xmlRemoteLogin->addChild("p",__("Log in with","BlaatLogin"));
+
+          //echo "<form action='".blaat_get_current_url()."' method='post'>";
+          $xmlRemoteLoginForm = $xmlRemoteLogin->addChild("form");
+          $xmlRemoteLoginForm->addAttribute("method","post");
+
+
+          $services = array();
+          foreach ($BSLOGIN_PLUGINS as $plugin) {
+            $services_new = array_merge ( $services, $plugin->getServices() );
+            $services=$services_new;
+          }
+
+
+          //echo "<pre>DEBUG:\n"; print_r($services); echo "</pre>";
+          //usort($services, "bsauth_buttons_sort");
+          usort($services, "BlaatLogin::sortServices");  
+          //echo "<pre>DEBUG:\n"; print_r($services); echo "</pre>";
+
+          foreach ($services as $service) {
+            //echo "<pre>DEBUG:\n"; print_r($service); echo "</pre>";
+            //!!echo bsauth_generate_button($button,"login");
+            self::generateButton($service, $xmlRemoteLoginForm, "login");
+          }
+          $customStyle = get_option("bsauth_custom_button");
+          if ($customStyle) $xmlRemoteLoginForm->addChild("style",$customStyle);
+          //echo "</form>";
+          //echo "</div>";
+          //echo "<style>" . htmlspecialchars(get_option("bsauth_custom_button")) . "</style>";
+        }
+        //!! MIGRATION IN PROGRESS, REMOVE LATER
+        echo "boe!";
+        BlaatSchaap::xml2html($xmlroot);
+      }
+      // end not loggedin, logging, linking,regging      
+
+
+
+
+
+
+
+
+      // begin logged in (show linking)
+      if ( $logged) {
+
+        $buttonsLinked   = array();      
+        $buttonsUnlinked = array();
+        
+        foreach ($BSLOGIN_PLUGINS as $bs_service) {
+          $buttons = $bs_service->getButtonsLinked($user->ID);
+       
+          $buttonsLinked_new = array_merge ( $buttonsLinked , $buttons['linked'] );
+          $buttonsUnlinked_new = array_merge ( $buttonsUnlinked , $buttons['unlinked'] );
+          $buttonsLinked=$buttonsLinked_new;
+          $buttonsUnlinked=$buttonsUnlinked_new;
+        }
+
+        usort($buttonsLinked, "bsauth_buttons_sort"); 
+        usort($buttonsUnlinked, "bsauth_buttons_sort");           
+
+        $unlinkHTML="";
+        $linkHTML="";
+
+        foreach ($buttonsLinked as $linked) {
+          $unlinkHTML .= bsauth_generate_button($linked,"unlink");
+        }
+
+        foreach ($buttonsUnlinked as $unlinked) {
+          $linkHTML .= bsauth_generate_button($unlinked,"link");
+        }
+
+        /*
+        unset($_SESSION['bsoauth_id']);
+        unset($_SESSION['bsauth_link']);
+        */
+
+        echo "<form action='".blaat_get_current_url()."' method='post'><div class='link authservices'><div class='blocktitle'>".
+                __("Link your account to","blaat_auth") .  "</div>".
+                $linkHTML . "
+             </div></form><form action='".blaat_get_current_url()."' method=post>
+             <div class='unlink authservices'><div class='blocktitle'>".
+                __("Unlink your account from","blaat_auth") . "</div>".
+               $unlinkHTML . "
+             </div></form>";
+
+      }
+      // end logged in (show linking)
+
+
+      if ($regging && !$linking && !$regging_local ) {
+        if (isset($_SESSION['new_user'])) $new_user = $_SESSION['new_user'];
+        _e("Please provide a username and e-mail address to complete your signup","blaat_auth");
+         ?><form action='<?php echo blaat_get_current_url()?>'method='post'>
+          <table>
+            <tr><td><?php _e("Username"); ?></td><td><input name='username' value='<?php if (isset($new_user['user_login'])) echo htmlspecialchars($new_user['user_login']);?>'</td></tr>
+            <?php if (get_option("bs_auth_signup_user_email")!="Disabled") { ?>
+            <tr><td><?php _e("E-mail Address"); ?></td><td><input name='email' value='<?php if (isset($new_user['user_email'])) echo htmlspecialchars($new_user['user_email']);?>' ></td></tr>
+            <?php } ?>
+            <tr><td><button name='cancel' type=submit><?php _e("Cancel"); ?></button></td><td><button name='register' value='1' type=submit><?php _e("Register"); ?></button></td></tr>
+            <tr><td></td><td><button name='bsauth_link' value='<?php echo htmlspecialchars($_SESSION['bsauth_register']); ?>' type='submit'><?php _e("Link to existing account","blaat_auth"); ?></button></td></td></tr>
+          </table>
+        </form>
+        <?php
+        //printf( __("If you already have an account, please click <a href='%s'>here</a> to link it.","blaat_auth") , site_url("/".get_option("link_page")));
+      }
+
+
+      if ($regging && $linking && !$regging_local) {
+        $service = $_SESSION['bsauth_display'];
+        echo "<div id='bsauth_local'>";
+        printf( "<p>" . __("Please provide a local account to link to %s","blaat_auth") . "</p>" , $service);
+        wp_login_form();
+        echo "</div>";
+      }
+
+
+      // begin regging 
+      if ($regging_local) {
+
+        if (!(get_option("bs_auth_hide_local"))) {
+          echo "<div id='bsauth_local'>";
+          echo "<p>" .  __("Enter a username, password and e-mail address to sign up","blaat_auth") . "</p>" ; 
+          ?>
+          <form ection='<?php blaat_get_current_url(); ?>' method=post>
+            <table>
+              <tr><td><?php _e("Username"); ?></td><td><input name='username'></td></tr>
+              <tr><td><?php _e("Password"); ?></td><td><input type='password' name='password'></td></tr>
+              <tr><td><?php _e("E-mail Address"); ?></td><td><input name='email'></td></tr>
+              <tr><td><button name='cancel' type=submit><?php _e("Cancel"); ?></button></td><td><button name='register'  type='submit'><?php _e("Register"); ?></button></td></tr>
+            </table>
+          </form>
+          <?php         
+          echo "</div>";
+        }
+
+        echo "<style>" . htmlspecialchars(get_option("bsauth_custom_button")) . "</style>";
+
+
+
+      }
+
+      // end regging
+
+    }
+  //------------------------------------------------------------------------------  
+    function generateButton($configuredService, &$xmlroot, $action=NULL){
 
 
     $xmlbutton = $xmlroot->addChild("button");
     $xmlbutton->addAttribute("class",'bs-auth-btn');
     if ($action) {
       $xmlbutton->addAttribute("name", "bsauth_$action");
-      $xmlbutton->addAttribute("value", $configuredService->plugin ."-". $configuredService->id);
+      $xmlbutton->addAttribute("value", $configuredService->plugin_id ."-". $configuredService->service_id);
       $xmlbutton->addAttribute("type", "submit");
     }
 

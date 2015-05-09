@@ -79,10 +79,12 @@ if (!function_exists("bsauth_generate_button")) {
 if (!function_exists("bsauth_display")) {
   function bsauth_display($content) {
 
-    if (get_option("blaatlogin_page")==$GLOBALS['post']->post_name) 
-      bsauth_view();
-    else
+    if (get_option("blaatlogin_page")==$GLOBALS['post']->ID) {
+      BlaatLogin::generateLoginPage();
+      //bsauth_view();
+    } else {
       return $content;
+    }
     
   }
 }
