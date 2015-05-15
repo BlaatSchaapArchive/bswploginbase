@@ -132,6 +132,12 @@ if (class_exists("BlaatSchaap")) {
     function generateGenericConfigPage() {
       if (isset($_POST['blaatlogin_config_save'])) {
         update_option("blaatlogin_page", $_POST['blaatlogin_page']);
+
+        update_option("blaatlogin_login_enabled", $_POST['blaatlogin_login_enabled']);
+        update_option("blaatlogin_register_enabled", $_POST['blaatlogin_register_enabled']);
+        update_option("blaatlogin_link_enabled", $_POST['blaatlogin_link_enabled']);
+        update_option("blaatlogin_fetch_enabled", $_POST['blaatlogin_fetch_enabled']);
+        update_option("blaatlogin_auto_enabled", $_POST['blaatlogin_auto_enabled']);
       }
 
       $GenericTab = new BlaatConfigTab("generic", __("Generic configuration", "blaat_oauth"));
@@ -590,6 +596,7 @@ if (class_exists("BlaatSchaap")) {
 
       $loginOptions = get_option("blaatlogin_login_enabled");
       $registerOptions = get_option("blaatlogin_register_enabled");
+      $linkOptions = get_option("blaatlogin_link_enabled");
 
       // begin not loggedin, logging, linking,regging
       if (!($logged || $logging || $linking || $regging)) {
@@ -597,10 +604,10 @@ if (class_exists("BlaatSchaap")) {
 
 
         if (!($loginOptions == "Disabled") || ($loginOptions == "RemoteOnly")) {
-          $xmlLocalLogin = $xmlroot->addChild("div");
-          $xmlLocalLogin->addAttribute("id", "bsauth_local");
+          $xmlLinkLogin = $xmlroot->addChild("div");
+          $xmlLinkLogin->addAttribute("id", "bsauth_local");
           //echo "<div id='bsauth_local'>";
-          $xmlLocalLogin->addChild("p", __("Log in with a local account", "BlaatLogin"));
+          $xmlLinkLogin->addChild("p", __("Log in with a local account", "BlaatLogin"));
           //echo "<p>" .  __("Log in with a local account","blaat_auth") . "</p>" ; 
           //wp_login_form();
           /*
@@ -611,36 +618,36 @@ if (class_exists("BlaatSchaap")) {
            * but can still add elements with a single class rather then the
            * DOM way, where we first create an element and then add it.
            */
-          $xmlLocalLoginForm = $xmlLocalLogin->addChild("form");
-          $xmlLocalLoginForm->addAttribute("method", "post");
-          $xmlLocalLoginForm->addAttribute("action", "/wp-login.php");
-          $xmlLocalLoginRedir = $xmlLocalLoginForm->addChild("input");
-          $xmlLocalLoginRedir->addAttribute("name", "redirect_to");
-          $xmlLocalLoginRedir->addAttribute("type", "hidden");
-          $xmlLocalLoginRedir->addAttribute("value", blaat_get_current_url()); //TODO migrate to class
+          $xmlLocalLinkForm = $xmlLinkLogin->addChild("form");
+          $xmlLocalLinkForm->addAttribute("method", "post");
+          $xmlLocalLinkForm->addAttribute("action", "/wp-login.php");
+          $xmlLocalLinkRedir = $xmlLocalLinkForm->addChild("input");
+          $xmlLocalLinkRedir->addAttribute("name", "redirect_to");
+          $xmlLocalLinkRedir->addAttribute("type", "hidden");
+          $xmlLocalLinkRedir->addAttribute("value", blaat_get_current_url()); //TODO migrate to class
 
-          $xmlLocalLoginFormTable = $xmlLocalLoginForm->addChild("table");
+          $xmlLocalLinkFormTable = $xmlLocalLinkForm->addChild("table");
 
-          $xmlLocalLoginFormTableTr = $xmlLocalLoginFormTable->addChild("tr");
-          $xmlLocalLoginFormTableTr->addChild("th", __('Username'));
-          $xmlLocalLoginUser = $xmlLocalLoginFormTableTr->addChild("td")->addChild("input");
-          $xmlLocalLoginUser->addAttribute("name", "log");
+          $xmlLocalLinkFormTableTr = $xmlLocalLinkFormTable->addChild("tr");
+          $xmlLocalLinkFormTableTr->addChild("th", __('Username'));
+          $xmlLocalLinkUser = $xmlLocalLinkFormTableTr->addChild("td")->addChild("input");
+          $xmlLocalLinkUser->addAttribute("name", "log");
 
-          $xmlLocalLoginFormTableTr = $xmlLocalLoginFormTable->addChild("tr");
-          $xmlLocalLoginFormTableTr->addChild("th", __('Password'));
-          $xmlLocalLoginPass = $xmlLocalLoginFormTableTr->addChild("td")->addChild("input");
-          $xmlLocalLoginPass->addAttribute("name", "pwd");
-          $xmlLocalLoginPass->addAttribute("type", "password");
-
-
+          $xmlLocalLinkFormTableTr = $xmlLocalLinkFormTable->addChild("tr");
+          $xmlLocalLinkFormTableTr->addChild("th", __('Password'));
+          $xmlLocalLinkPass = $xmlLocalLinkFormTableTr->addChild("td")->addChild("input");
+          $xmlLocalLinkPass->addAttribute("name", "pwd");
+          $xmlLocalLinkPass->addAttribute("type", "password");
 
 
-          $xmlLocalLoginFormTableTr = $xmlLocalLoginFormTable->addChild("tr");
-          $xmlLocalLoginFormTableTr->addChild("th");
-          $xmlLocalLoginSub = $xmlLocalLoginFormTableTr->addChild("td")->addChild("input");
-          $xmlLocalLoginSub->addAttribute("name", "wp-submit");
-          $xmlLocalLoginSub->addAttribute("type", "submit");
-          $xmlLocalLoginSub->addAttribute("value", __("Log in"));
+
+
+          $xmlLocalLinkFormTableTr = $xmlLocalLinkFormTable->addChild("tr");
+          $xmlLocalLinkFormTableTr->addChild("th");
+          $xmlLocalLinkSub = $xmlLocalLinkFormTableTr->addChild("td")->addChild("input");
+          $xmlLocalLinkSub->addAttribute("name", "wp-submit");
+          $xmlLocalLinkSub->addAttribute("type", "submit");
+          $xmlLocalLinkSub->addAttribute("value", __("Log in"));
 
           /*
             ?>
@@ -698,7 +705,7 @@ if (class_exists("BlaatSchaap")) {
       }
       // end not loggedin, logging, linking,regging      
       // begin logged in (show linking)
-      if ($logged) {
+      if ($logged && ($linkOptions == "Enabled")) {
 
         $servicesLinked = array();
         $servicesUnlinked = array();
@@ -714,24 +721,6 @@ if (class_exists("BlaatSchaap")) {
 
         usort($servicesLinked, "BlaatLogin::sortServices");
         usort($servicesUnlinked, "BlaatLogin::sortServices");
-
-
-        /*
-          $unlinkHTML="";
-          $linkHTML="";
-
-          foreach ($servicesLinked as $linked) {
-          $unlinkHTML .= bsauth_generate_button($linked,"unlink");
-          }
-
-          foreach ($servicesUnlinked as $unlinked) {
-          $linkHTML .= bsauth_generate_button($unlinked,"link");
-          }
-         */
-        /*
-          unset($_SESSION['bsoauth_id']);
-          unset($_SESSION['bsauth_link']);
-         */
 
         $xmlForm = $xmlroot->addChild("form");
         $xmlForm->addAttribute("action", BlaatSchaap::getCurrentURL());
@@ -751,49 +740,135 @@ if (class_exists("BlaatSchaap")) {
         foreach ($servicesUnlinked as $unlinked) {
           self::generateButton($unlinked, $xmlLink, "link");
         }
-
-
-        /*
-          echo "<form action='".blaat_get_current_url()."' method='post'><div class='link authservices'><div class='blocktitle'>".
-          __("Link your account to","blaat_auth") .  "</div>".
-          $linkHTML . "
-          </div></form><form action='".blaat_get_current_url()."' method=post>
-          <div class='unlink authservices'><div class='blocktitle'>".
-          __("Unlink your account from","blaat_auth") . "</div>".
-          $unlinkHTML . "
-          </div></form>";
-         */
         //!! MIGRATION IN PROGRESS, REMOVE LATER
         BlaatSchaap::xml2html($xmlroot);
       }
       // end logged in (show linking)
+      // TODO ?? show something when ($logging && $linkOptions!="Enabled")
 
 
-      if ($regging && !$linking && !$regging_local) {
+
+
+      if ($regging && ($registerOptions == "RemoteOnly" ||
+              $registerOptions == "Both" ||
+              ($registerOptions == "HonourGlobal" &&
+              get_option('users_can_register'))) &&
+              !$linking && !$regging_local) {
         if (isset($_SESSION['new_user']))
           $new_user = $_SESSION['new_user'];
-        _e("Please provide a username and e-mail address to complete your signup", "blaat_auth");
-        ?><form action='<?php echo blaat_get_current_url() ?>'method='post'>
+
+        $xmlForm = $xmlroot->addChild("form");
+        $xmlForm->addAttribute("action", BlaatSchaap::getCurrentURL());
+        $xmlForm->addAttribute("method", "post");
+        $xmlRegister = $xmlForm->addChild("div");
+        $xmlRegister->addAttribute("class", 'link authservices');
+        $xmlRegisterTitle = $xmlRegister->addChild("div", __("Please provide a username and e-mail address to complete your signup", "BlaatLogin"));
+        $xmlTable = $xmlForm->addChild("table");
+
+        $xmlTableTr = $xmlTable->addChild("tr");
+        $xmlTableTr->addChild("th", __('Username'));
+        $xmlRemoteRegisterUser = $xmlTableTr->addChild("td")->addChild("input");
+        $xmlRemoteRegisterUser->addAttribute("name", "username");
+        if (isset($new_user['user_login']))
+          $xmlRemoteRegisterUser->addAttribute("value", $new_user['user_login']);
+
+        // TODO Options Enable/Disable fields, add more fields
+        $xmlTableTr = $xmlTable->addChild("tr");
+        $xmlTableTr->addChild("th", __('Email'));
+        $xmlRemoteRegisterEmail = $xmlTableTr->addChild("td")->addChild("input");
+        $xmlRemoteRegisterEmail->addAttribute("name", "email");
+        $xmlRemoteRegisterEmail->addAttribute("type", "email");
+        if (isset($new_user['user_email']))
+          $xmlRemoteRegisterEmail->addAttribute("value", $new_user['user_email']);
+
+        $xmlTableTr = $xmlTable->addChild("tr");
+        //$xmlTableTr->addChild("th");
+
+        $xmlRemoteRegisterCancel = $xmlTableTr->addChild("td")->addChild("button", __("Cancel"));
+        $xmlRemoteRegisterCancel->addAttribute("type", "submit");
+        $xmlRemoteRegisterCancel->addAttribute("value", "1");
+        $xmlRemoteRegisterCancel->addAttribute("name", "cancel");
+        $xmlRemoteRegisterSubmit = $xmlTableTr->addChild("td")->addChild("button", __("Register"));
+        $xmlRemoteRegisterSubmit->addAttribute("value", "1");
+        $xmlRemoteRegisterSubmit->addAttribute("name", "register");
+        $xmlRemoteRegisterSubmit->addAttribute("type", "submit");
+
+        if ($linkOptions == "Enabled") {
+          $xmlTableTr = $xmlTable->addChild("tr");
+          $xmlTableTr->addChild("th");
+          $xmlRemoteRegisterLink = $xmlTableTr->addChild("td")->addChild("button", __("Link to existing account", "BlaatLogin"));
+          $xmlRemoteRegisterLink->addAttribute("value", $_SESSION['bsauth_register']);
+          $xmlRemoteRegisterLink->addAttribute("name", "bsauth_link");
+          $xmlRemoteRegisterLink->addAttribute("type", "submit");
+        }
+
+        //!! MIGRATION IN PROGRESS, REMOVE LATER
+        BlaatSchaap::xml2html($xmlroot);
+        /*
+          ?><form action='<?php echo blaat_get_current_url() ?>'method='post'>
           <table>
-            <tr><td><?php _e("Username"); ?></td><td><input name='username' value='<?php if (isset($new_user['user_login'])) echo htmlspecialchars($new_user['user_login']); ?>'</td></tr>
-        <?php if (get_option("bs_auth_signup_user_email") != "Disabled") { ?>
-              <tr><td><?php _e("E-mail Address"); ?></td><td><input name='email' value='<?php if (isset($new_user['user_email'])) echo htmlspecialchars($new_user['user_email']); ?>' ></td></tr>
-        <?php } ?>
-            <tr><td><button name='cancel' type=submit><?php _e("Cancel"); ?></button></td><td><button name='register' value='1' type=submit><?php _e("Register"); ?></button></td></tr>
-            <tr><td></td><td><button name='bsauth_link' value='<?php echo htmlspecialchars($_SESSION['bsauth_register']); ?>' type='submit'><?php _e("Link to existing account", "blaat_auth"); ?></button></td></td></tr>
+          <tr><td><?php _e("Username"); ?></td><td><input name='username' value='<?php if (isset($new_user['user_login'])) echo htmlspecialchars($new_user['user_login']); ?>'</td></tr>
+          <?php if (get_option("bs_auth_signup_user_email") != "Disabled") { ?>
+          <tr><td><?php _e("E-mail Address"); ?></td><td><input name='email' value='<?php if (isset($new_user['user_email'])) echo htmlspecialchars($new_user['user_email']); ?>' ></td></tr>
+          <?php } ?>
+          <tr><td><button name='cancel' type=submit><?php _e("Cancel"); ?></button></td><td><button name='register' value='1' type=submit><?php _e("Register"); ?></button></td></tr>
+          <tr><td></td><td><button name='bsauth_link' value='<?php echo htmlspecialchars($_SESSION['bsauth_register']); ?>' type='submit'><?php _e("Link to existing account", "blaat_auth"); ?></button></td></td></tr>
           </table>
-        </form>
-        <?php
-        //printf( __("If you already have an account, please click <a href='%s'>here</a> to link it.","blaat_auth") , site_url("/".get_option("link_page")));
+          </form>
+          <?php
+          //printf( __("If you already have an account, please click <a href='%s'>here</a> to link it.","blaat_auth") , site_url("/".get_option("link_page")));
+         * 
+         */
       }
 
 
-      if ($regging && $linking && !$regging_local) {
+      if ($regging && $linking && ($linkOptions == "Enabled") && !$regging_local) {
         $service = $_SESSION['bsauth_display'];
-        echo "<div id='bsauth_local'>";
-        printf("<p>" . __("Please provide a local account to link to %s", "blaat_auth") . "</p>", $service);
-        wp_login_form();
-        echo "</div>";
+        $xmlLinkLogin = $xmlroot->addChild("div");
+        $xmlLinkLogin->addAttribute("id", "bsauth_local");
+        //echo "<div id='bsauth_local'>";
+        $xmlLinkLogin->addChild("p", __("Log in with a local account", "BlaatLogin"));
+
+        $xmlLocalLinkForm = $xmlLinkLogin->addChild("form");
+        $xmlLocalLinkForm->addAttribute("method", "post");
+        $xmlLocalLinkForm->addAttribute("action", "/wp-login.php");
+        $xmlLocalLinkRedir = $xmlLocalLinkForm->addChild("input");
+        $xmlLocalLinkRedir->addAttribute("name", "redirect_to");
+        $xmlLocalLinkRedir->addAttribute("type", "hidden");
+        $xmlLocalLinkRedir->addAttribute("value", BlaatSchaap::getCurrentURL()); //TODO migrate to class
+
+        $xmlLocalLinkFormTable = $xmlLocalLinkForm->addChild("table");
+
+        $xmlLocalLinkFormTableTr = $xmlLocalLinkFormTable->addChild("tr");
+        $xmlLocalLinkFormTableTr->addChild("th", __('Username'));
+        $xmlLocalLinkUser = $xmlLocalLinkFormTableTr->addChild("td")->addChild("input");
+        $xmlLocalLinkUser->addAttribute("name", "log");
+
+        $xmlLocalLinkFormTableTr = $xmlLocalLinkFormTable->addChild("tr");
+        $xmlLocalLinkFormTableTr->addChild("th", __('Password'));
+        $xmlLocalLinkPass = $xmlLocalLinkFormTableTr->addChild("td")->addChild("input");
+        $xmlLocalLinkPass->addAttribute("name", "pwd");
+        $xmlLocalLinkPass->addAttribute("type", "password");
+
+
+
+
+        $xmlLocalLinkFormTableTr = $xmlLocalLinkFormTable->addChild("tr");
+        $xmlLocalLinkFormTableTr->addChild("th");
+        $xmlLocalLinkSub = $xmlLocalLinkFormTableTr->addChild("td")->addChild("input");
+        $xmlLocalLinkSub->addAttribute("name", "wp-submit");
+        $xmlLocalLinkSub->addAttribute("type", "submit");
+        $xmlLocalLinkSub->addAttribute("value", __("Link Account", "BlaatLogin"));
+
+        //!! MIGRATION IN PROGRESS, REMOVE LATER
+        BlaatSchaap::xml2html($xmlroot);
+        /*
+          echo "<div id='bsauth_local'>";
+          printf("<p>" . __("Please provide a local account to link to %s", "blaat_auth") . "</p>", $service);
+          wp_login_form();
+          echo "</div>";
+         * 
+         */
       }
 
 
