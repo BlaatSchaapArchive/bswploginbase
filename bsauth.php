@@ -630,7 +630,10 @@ if (!(function_exists("bsauth_process"))){
 
         if (isset($_POST['username'])) $new_user['user_login']= $_POST['username'];
         if (isset($_POST['email']))    $new_user['user_email']= $_POST['email'];
-        if (isset($_POST['password'])) $new_user['user_pass']= wp_hash_password($_POST['password']);
+        //if (isset($_POST['password'])) $new_user['user_pass']= wp_hash_password($_POST['password']);
+        //*NEW* users need *UNHASHED* password, *EXISTING* users need *HASHED* password.
+        //Speaking about consistency....
+        if (isset($_POST['password'])) $new_user['user_pass']= $_POST['password'];
 
         if (isset($new_user)) $_SESSION['bsauth_register_userinfo'] = $new_user;
 

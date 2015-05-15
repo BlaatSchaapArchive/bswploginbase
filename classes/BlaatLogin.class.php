@@ -649,6 +649,21 @@ if (class_exists("BlaatSchaap")) {
           $xmlLocalLinkSub->addAttribute("type", "submit");
           $xmlLocalLinkSub->addAttribute("value", __("Log in"));
 
+
+
+          if (($registerOptions == "LocalOnly" ||
+                  $registerOptions == "Both" ||
+                  ($registerOptions == "HonourGlobal" &&
+                  get_option('users_can_register')))) {
+
+            $xmlLocalRegisterForm = $xmlLinkLogin->addChild("form");
+            $xmlLocalRegisterForm->addAttribute("method", "post");
+            $xmlLocalRegisterForm->addAttribute("action", BlaatSchaap::getCurrentURL());
+            $xmlLocalRegisterButton = $xmlLocalRegisterForm->addChild("button", __("Register"));
+            $xmlLocalRegisterButton->addAttribute("value", "local");
+            $xmlLocalRegisterButton->addAttribute("name", "bsauth_register");
+            $xmlLocalRegisterButton->addAttribute("type", "submit");
+          }
           /*
             ?>
             <form method='post' action='<?php echo blaat_get_current_url(); ?>'>
@@ -826,7 +841,6 @@ if (class_exists("BlaatSchaap")) {
         $service = $_SESSION['bsauth_display'];
         $xmlLinkLogin = $xmlroot->addChild("div");
         $xmlLinkLogin->addAttribute("id", "bsauth_local");
-        //echo "<div id='bsauth_local'>";
         $xmlLinkLogin->addChild("p", __("Log in with a local account", "BlaatLogin"));
 
         $xmlLocalLinkForm = $xmlLinkLogin->addChild("form");
@@ -850,9 +864,6 @@ if (class_exists("BlaatSchaap")) {
         $xmlLocalLinkPass->addAttribute("name", "pwd");
         $xmlLocalLinkPass->addAttribute("type", "password");
 
-
-
-
         $xmlLocalLinkFormTableTr = $xmlLocalLinkFormTable->addChild("tr");
         $xmlLocalLinkFormTableTr->addChild("th");
         $xmlLocalLinkSub = $xmlLocalLinkFormTableTr->addChild("td")->addChild("input");
@@ -862,35 +873,75 @@ if (class_exists("BlaatSchaap")) {
 
         //!! MIGRATION IN PROGRESS, REMOVE LATER
         BlaatSchaap::xml2html($xmlroot);
-        /*
-          echo "<div id='bsauth_local'>";
-          printf("<p>" . __("Please provide a local account to link to %s", "blaat_auth") . "</p>", $service);
-          wp_login_form();
-          echo "</div>";
-         * 
-         */
       }
 
 
-      // begin regging 
-      if ($regging_local) {
+      // begin regging local
+      if ($regging_local && ($registerOptions == "LocalOnly" ||
+              $registerOptions == "Both" ||
+              ($registerOptions == "HonourGlobal" &&
+              get_option('users_can_register')))) {
+        // TODO :: What are the differences between the local and remote
+        // login forms??? Possibly merge!!! no $new_user, added password field
+        $xmlForm = $xmlroot->addChild("form");
+        $xmlForm->addAttribute("action", BlaatSchaap::getCurrentURL());
+        $xmlForm->addAttribute("method", "post");
+        $xmlRegister = $xmlForm->addChild("div");
+        $xmlRegister->addAttribute("class", 'link authservices');
+        $xmlRegisterTitle = $xmlRegister->addChild("div", __("Enter a username, password and e-mail address to sign up", "BlaatLogin"));
+        $xmlTable = $xmlForm->addChild("table");
 
-        if (!(get_option("bs_auth_hide_local"))) {
+        $xmlTableTr = $xmlTable->addChild("tr");
+        $xmlTableTr->addChild("th", __('Username'));
+        $xmlLocalRegisterUser = $xmlTableTr->addChild("td")->addChild("input");
+        $xmlLocalRegisterUser->addAttribute("name", "username");
+
+        $xmlTableTr = $xmlTable->addChild("tr");
+        $xmlTableTr->addChild("th", __('Password'));
+        $xmlLocalRegisterEmail = $xmlTableTr->addChild("td")->addChild("input");
+        $xmlLocalRegisterEmail->addAttribute("name", "password");
+        $xmlLocalRegisterEmail->addAttribute("type", "password");
+
+// TODO Options Enable/Disable fields, add more fields
+        $xmlTableTr = $xmlTable->addChild("tr");
+        $xmlTableTr->addChild("th", __('Email'));
+        $xmlLocalRegisterEmail = $xmlTableTr->addChild("td")->addChild("input");
+        $xmlLocalRegisterEmail->addAttribute("name", "email");
+        $xmlLocalRegisterEmail->addAttribute("type", "email");
+
+
+        $xmlTableTr = $xmlTable->addChild("tr");
+        //$xmlTableTr->addChild("th");
+
+        $xmlLocalRegisterCancel = $xmlTableTr->addChild("td")->addChild("button", __("Cancel"));
+        $xmlLocalRegisterCancel->addAttribute("type", "submit");
+        $xmlLocalRegisterCancel->addAttribute("value", "1");
+        $xmlLocalRegisterCancel->addAttribute("name", "cancel");
+        $xmlLocalRegisterSubmit = $xmlTableTr->addChild("td")->addChild("button", __("Register"));
+        $xmlLocalRegisterSubmit->addAttribute("value", "1");
+        $xmlLocalRegisterSubmit->addAttribute("name", "register");
+        $xmlLocalRegisterSubmit->addAttribute("type", "submit");
+
+        //!! MIGRATION IN PROGRESS, REMOVE LATER
+        BlaatSchaap::xml2html($xmlroot);
+        /*
+
+          if (!(get_option("bs_auth_hide_local"))) {
           echo "<div id='bsauth_local'>";
           echo "<p>" . __("Enter a username, password and e-mail address to sign up", "blaat_auth") . "</p>";
           ?>
           <form ection='<?php blaat_get_current_url(); ?>' method=post>
-            <table>
-              <tr><td><?php _e("Username"); ?></td><td><input name='username'></td></tr>
-              <tr><td><?php _e("Password"); ?></td><td><input type='password' name='password'></td></tr>
-              <tr><td><?php _e("E-mail Address"); ?></td><td><input name='email'></td></tr>
-              <tr><td><button name='cancel' type=submit><?php _e("Cancel"); ?></button></td><td><button name='register'  type='submit'><?php _e("Register"); ?></button></td></tr>
-            </table>
+          <table>
+          <tr><td><?php _e("Username"); ?></td><td><input name='username'></td></tr>
+          <tr><td><?php _e("Password"); ?></td><td><input type='password' name='password'></td></tr>
+          <tr><td><?php _e("E-mail Address"); ?></td><td><input name='email'></td></tr>
+          <tr><td><button name='cancel' type=submit><?php _e("Cancel"); ?></button></td><td><button name='register'  type='submit'><?php _e("Register"); ?></button></td></tr>
+          </table>
           </form>
           <?php
           echo "</div>";
-        }
-
+          }
+         */
         echo "<style>" . htmlspecialchars(get_option("bsauth_custom_button")) . "</style>";
       }
 
