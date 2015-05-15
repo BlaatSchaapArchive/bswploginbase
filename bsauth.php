@@ -4,7 +4,7 @@
 Plugin Name: BlaatLogin Base
 Plugin URI: http://code.blaatschaap.be
 Description: Common code for all BlaatLogin plugins
-Version: 0.2
+Version: 0.3
 Author: André van Schoubroeck
 Author URI: http://www.andrevanschoubroeck.name
 License: BSD
