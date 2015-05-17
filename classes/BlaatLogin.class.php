@@ -1,6 +1,7 @@
 <?php
 if (class_exists("BlaatSchaap")) {
 
+  // possible extend BlaatSchaap -- in a later phase of development
   class BlaatLogin {
 
 //------------------------------------------------------------------------------
@@ -8,8 +9,6 @@ if (class_exists("BlaatSchaap")) {
 
     function init() {
       // NOTE we cannot use self:: in function calls outside the class
-
-
 
       if (!BlaatSchaap::isPageRegistered('blaat_plugins')) {
         add_menu_page('BlaatSchaap', 'BlaatSchaap', 'manage_options', 'blaat_plugins', 'blaat_plugins_page');
@@ -546,9 +545,9 @@ if (class_exists("BlaatSchaap")) {
       $GenericTab = new BlaatConfigTab("generic", __("Generic configuration", "blaat_oauth"));
       $tabs[] = $GenericTab;
 
-      $GenericTab->addOption(new BlaatConfigOption("display_name", __("Display name", "blaat_auth"), "text", true));
+      $GenericTab->addOption(new BlaatConfigOption("display_name", __("Display name", "BlaatLogin"), "text", true));
 
-      $GenericTab->addOption(new BlaatConfigOption("enabled", __("Enabled", "blaat_auth"), "checkbox", false, true));
+      $GenericTab->addOption(new BlaatConfigOption("enabled", __("Enabled", "BlaatLogin"), "checkbox", false, true));
 
       /* Not yet implemented, hiding the option
         $GenericTab->addOption(new BlaatConfigOption("auto_register",
@@ -639,9 +638,6 @@ if (class_exists("BlaatSchaap")) {
           $xmlLocalLinkPass->addAttribute("name", "pwd");
           $xmlLocalLinkPass->addAttribute("type", "password");
 
-
-
-
           $xmlLocalLinkFormTableTr = $xmlLocalLinkFormTable->addChild("tr");
           $xmlLocalLinkFormTableTr->addChild("th");
           $xmlLocalLinkSub = $xmlLocalLinkFormTableTr->addChild("td")->addChild("input");
@@ -664,17 +660,6 @@ if (class_exists("BlaatSchaap")) {
             $xmlLocalRegisterButton->addAttribute("name", "bsauth_register");
             $xmlLocalRegisterButton->addAttribute("type", "submit");
           }
-          /*
-            ?>
-            <form method='post' action='<?php echo blaat_get_current_url(); ?>'>
-
-            <button type='submit' value='local' name='bsauth_register'><?php
-            _e("Register"); ?></button>
-            </form>
-            <?php
-            echo "</div>";
-           */
-          // TODO ADD REGISTER BUTTON 
         }
 
         if (!($loginOptions == "Disabled") || ($loginOptions == "LocalOnly")) {
@@ -698,27 +683,16 @@ if (class_exists("BlaatSchaap")) {
           }
 
 
-          //echo "<pre>DEBUG:\n"; print_r($services); echo "</pre>";
-          //usort($services, "bsauth_buttons_sort");
           usort($services, "BlaatLogin::sortServices");
-          //echo "<pre>DEBUG:\n"; print_r($services); echo "</pre>";
 
           foreach ($services as $service) {
-            //echo "<pre>DEBUG:\n"; print_r($service); echo "</pre>";
-            //!!echo bsauth_generate_button($button,"login");
             self::generateButton($service, $xmlRemoteLoginForm, "login");
           }
           $customStyle = get_option("bsauth_custom_button");
           if ($customStyle)
             $xmlRemoteLoginForm->addChild("style", $customStyle);
-          //echo "</form>";
-          //echo "</div>";
-          //echo "<style>" . htmlspecialchars(get_option("bsauth_custom_button")) . "</style>";
         }
-        //!! MIGRATION IN PROGRESS, REMOVE LATER
-        BlaatSchaap::xml2html($xmlroot);
-      }
-      // end not loggedin, logging, linking,regging      
+      } // end not loggedin, logging, linking,regging      
       // begin logged in (show linking)
       if ($logged && ($linkOptions == "Enabled")) {
 
@@ -755,14 +729,9 @@ if (class_exists("BlaatSchaap")) {
         foreach ($servicesUnlinked as $unlinked) {
           self::generateButton($unlinked, $xmlLink, "link");
         }
-        //!! MIGRATION IN PROGRESS, REMOVE LATER
-        BlaatSchaap::xml2html($xmlroot);
       }
       // end logged in (show linking)
       // TODO ?? show something when ($logging && $linkOptions!="Enabled")
-
-
-
 
       if ($regging && ($registerOptions == "RemoteOnly" ||
               $registerOptions == "Both" ||
@@ -816,24 +785,6 @@ if (class_exists("BlaatSchaap")) {
           $xmlRemoteRegisterLink->addAttribute("name", "bsauth_link");
           $xmlRemoteRegisterLink->addAttribute("type", "submit");
         }
-
-        //!! MIGRATION IN PROGRESS, REMOVE LATER
-        BlaatSchaap::xml2html($xmlroot);
-        /*
-          ?><form action='<?php echo blaat_get_current_url() ?>'method='post'>
-          <table>
-          <tr><td><?php _e("Username"); ?></td><td><input name='username' value='<?php if (isset($new_user['user_login'])) echo htmlspecialchars($new_user['user_login']); ?>'</td></tr>
-          <?php if (get_option("bs_auth_signup_user_email") != "Disabled") { ?>
-          <tr><td><?php _e("E-mail Address"); ?></td><td><input name='email' value='<?php if (isset($new_user['user_email'])) echo htmlspecialchars($new_user['user_email']); ?>' ></td></tr>
-          <?php } ?>
-          <tr><td><button name='cancel' type=submit><?php _e("Cancel"); ?></button></td><td><button name='register' value='1' type=submit><?php _e("Register"); ?></button></td></tr>
-          <tr><td></td><td><button name='bsauth_link' value='<?php echo htmlspecialchars($_SESSION['bsauth_register']); ?>' type='submit'><?php _e("Link to existing account", "blaat_auth"); ?></button></td></td></tr>
-          </table>
-          </form>
-          <?php
-          //printf( __("If you already have an account, please click <a href='%s'>here</a> to link it.","blaat_auth") , site_url("/".get_option("link_page")));
-         * 
-         */
       }
 
 
@@ -870,9 +821,6 @@ if (class_exists("BlaatSchaap")) {
         $xmlLocalLinkSub->addAttribute("name", "wp-submit");
         $xmlLocalLinkSub->addAttribute("type", "submit");
         $xmlLocalLinkSub->addAttribute("value", __("Link Account", "BlaatLogin"));
-
-        //!! MIGRATION IN PROGRESS, REMOVE LATER
-        BlaatSchaap::xml2html($xmlroot);
       }
 
 
@@ -921,36 +869,17 @@ if (class_exists("BlaatSchaap")) {
         $xmlLocalRegisterSubmit->addAttribute("value", "1");
         $xmlLocalRegisterSubmit->addAttribute("name", "register");
         $xmlLocalRegisterSubmit->addAttribute("type", "submit");
-
-        //!! MIGRATION IN PROGRESS, REMOVE LATER
-        BlaatSchaap::xml2html($xmlroot);
-        /*
-
-          if (!(get_option("bs_auth_hide_local"))) {
-          echo "<div id='bsauth_local'>";
-          echo "<p>" . __("Enter a username, password and e-mail address to sign up", "blaat_auth") . "</p>";
-          ?>
-          <form ection='<?php blaat_get_current_url(); ?>' method=post>
-          <table>
-          <tr><td><?php _e("Username"); ?></td><td><input name='username'></td></tr>
-          <tr><td><?php _e("Password"); ?></td><td><input type='password' name='password'></td></tr>
-          <tr><td><?php _e("E-mail Address"); ?></td><td><input name='email'></td></tr>
-          <tr><td><button name='cancel' type=submit><?php _e("Cancel"); ?></button></td><td><button name='register'  type='submit'><?php _e("Register"); ?></button></td></tr>
-          </table>
-          </form>
-          <?php
-          echo "</div>";
-          }
-         */
-        echo "<style>" . htmlspecialchars(get_option("bsauth_custom_button")) . "</style>";
       }
-
       // end regging
+
+      $customCSS = get_option("bsauth_custom_button");
+      if ($customCSS)
+        $xmlroot->addChild("style", $customCSS);
+      BlaatSchaap::xml2html($xmlroot);
     }
 
     //------------------------------------------------------------------------------  
     function generateButton($configuredService, &$xmlroot, $action = NULL) {
-
 
       $xmlbutton = $xmlroot->addChild("button");
       $xmlbutton->addAttribute("class", 'bs-auth-btn');
@@ -959,7 +888,6 @@ if (class_exists("BlaatSchaap")) {
         $xmlbutton->addAttribute("value", $configuredService->plugin_id . "-" . $configuredService->service_id);
         $xmlbutton->addAttribute("type", "submit");
       }
-
 
       $xmllogo = $xmlbutton->addChild("span", " "); //HTML5/XHTML incompatibility, no <span /> allowed?
       // might not be needed with the new generation code
@@ -978,6 +906,224 @@ if (class_exists("BlaatSchaap")) {
     }
 
     //------------------------------------------------------------------------------
+
+    function processLogin() {
+
+
+      global $BSLOGIN_PLUGINS;
+      global $wpdb;
+      //$user = wp_get_current_user();
+      $loginOptions = get_option("blaatlogin_login_enabled");
+      $registerOptions = get_option("blaatlogin_register_enabled");
+      $linkOptions = get_option("blaatlogin_link_enabled");
+
+      $logged = is_user_logged_in();
+      $logging = isset($_SESSION['bsauth_login']) || isset($_POST['bsauth_login']);
+      $linking = isset($_SESSION['bsauth_link']) || isset($_POST['bsauth_link']);
+      $regging = isset($_SESSION['bsauth_register']) || isset($_POST['bsauth_register']);
+      $unlinking = isset($_POST['bsauth_unlink']);
+
+      if ($regging && isset($_POST['cancel'])) {
+        unset($_SESSION['bsauth_register']);
+        unset($_SESSION['bsauth_plugin']);
+        unset($_SESSION['bsauth_login_id']);
+        $regging = false;
+      }
+
+      if ($regging && $linking) {
+        $_SESSION['bsauth_link'] = $_SESSION['bsauth_register'];
+      }
+
+      if ($regging && $logged) {
+        unset($_SESSION['bsauth_register']);
+      }
+
+      // begin linking 
+      if ($logged && $linking && ($linkOptions == "Enabled")) {
+        if (isset($_SESSION['bsauth_link'])) {
+          $link = explode("-", $_SESSION['bsauth_link']);
+          unset($_SESSION['bsauth_link']);
+        }
+        if (isset($_POST['bsauth_link'])) {
+          $link = explode("-", $_POST['bsauth_link']);
+          $_SESSION['bsauth_link'] = $_POST['bsauth_link'];
+        }
+
+        $plugin_id = $link[0];
+        $link_id = $link[1];
+        $plugin = $BSLOGIN_PLUGINS[$plugin_id];
+
+        $status = $plugin->Link($link_id);
+        switch ($status) {
+          case AuthStatus::LinkSuccess :
+            $_SESSION['bsauth_display_message'] = sprintf(__("Your %s account has been linked", "BlaatLogin"), $_SESSION['display_name']);
+            unset($_SESSION['bsauth_link']);
+            unset($_SESSION['bsauth_register']);
+            break;
+          case AuthStatus::LinkInUse :
+            $_SESSION['bsauth_display_message'] = sprintf(__("Your %s account has is already linked to another local account", "BlaatLogin"), $_SESSION['display_name']);
+            unset($_SESSION['bsauth_link']);
+            break;
+          default :
+            $_SESSION['bsauth_display_message'] = "Unkown status while attempting to link" . $status;
+          //$_SESSION['debug_status'] = $status;
+        }
+      }
+      // end linkin
+      // begin unlinking 
+      if ($logged && $unlinking && ($linkOptions == "Enabled")) {
+        $unlink = explode("-", $_POST['bsauth_unlink']);
+
+        $plugin_id = $unlink[0];
+        $link_id = $unlink[1];
+        $plugin = $BSLOGIN_PLUGINS[$plugin_id];
+        if ($plugin->Unlink($link_id)) {
+          $_SESSION['bsauth_display_message'] = sprintf(__("You are now unlinked from %s.", "BlaatLogin"), $_SESSION['display_name']);
+        } else {
+          // unlink error
+        }
+        unset($_SESSION['bsauth_unlink']);
+      }
+      // end unlinking
+      // 
+      // begin loggin in
+      /*
+       * 
+       */
+      if ($logging &&
+              (!($loginOptions == "Disabled") || 
+              ($loginOptions == "LocalOnly")) && 
+              !$logged) {
+        if (isset($_POST['bsauth_login'])) {
+          $login = explode("-", $_POST['bsauth_login']);
+          $_SESSION['bsauth_login'] = $_POST['bsauth_login'];
+        } else {
+          $login = explode("-", $_SESSION['bsauth_login']);
+        }
+        $plugin_id = $login[0];
+        $login_id = $login[1];
+
+
+        if (isset($plugin_id) && isset($login_id)) {
+          $service = $BSLOGIN_PLUGINS[$plugin_id];
+          if ($service != null) {
+            $result = $service->Login($login_id);
+            switch ($result) {
+              case AuthStatus::Busy :
+                break;
+              case AuthStatus::LoginSuccess :
+                //logged in
+                unset($_SESSION['bsauth_login']);
+                unset($_SESSION['bsauth_plugin']);
+                unset($_SESSION['bsauth_login_id']);
+                unset($_SESSION['bsauth_register_userinfo']);
+                $userinfo = wp_get_current_user();
+                if (strlen($userinfo->display_name)) {
+                  $display_name = $userinfo->display_name;
+                } else {
+                  $display_name = $userinfo->display_login;
+                }
+                $_SESSION['bsauth_display_message'] = sprintf(__("Welcome back, %s.", "BlaatLogin"), $display_name);
+                break;
+              case AuthStatus::LoginMustRegister :
+                // does this work now?
+                $_SESSION['bsauth_register'] = $_SESSION['bsauth_login'];
+                unset($_SESSION['bsauth_login']);
+                //$_SESSION['bsauth_display_message'] = "TODO:: EXTERNAL SIGNUP"; 
+                break;
+              case AuthStatus::Error :
+                $_SESSION['bsauth_display_message'] = "Unkown error";
+                break;
+              default :
+                $_SESSION['bsauth_display_message'] = "Unkown status while attempting to log in";
+              //$_SESSION['debug_status'] = $result;
+            }
+          } else {
+            $_SESSION['bsauth_display_message'] = __("Invalid plugin", "BlaatLogin");
+          }
+        } else {
+          $_SESSION['bsauth_display_message'] = __("Invalid request", "BlaatLogin");
+        }
+      }
+      // end loggin in
+      // 
+      // begin regging
+      if ($regging  &&!$logged) {
+        if (!isset($_SESSION['bsauth_register'])) {
+          $_SESSION['bsauth_register'] = $_POST['bsauth_register'];
+        }
+        $register = explode("-", $_SESSION['bsauth_register']);
+
+        $plugin_id = $register[0];
+        if ($plugin_id == "local") {
+          $local = true;
+        } else {
+          $login_id = $register[1];
+          $local = false;
+        }
+
+
+
+
+        if (!isset($new_user))
+          $new_user = array();
+
+        if (isset($_POST['username']))
+          $new_user['user_login'] = $_POST['username'];
+        if (isset($_POST['email']))
+          $new_user['user_email'] = $_POST['email'];
+        //if (isset($_POST['password'])) $new_user['user_pass']= wp_hash_password($_POST['password']);
+        //*NEW* users need *UNHASHED* password, *EXISTING* users need *HASHED* password.
+        //Speaking about consistency....
+        if (isset($_POST['password']))
+          $new_user['user_pass'] = $_POST['password'];
+
+        if (isset($new_user))
+          $_SESSION['bsauth_register_userinfo'] = $new_user;
+
+        if (isset($new_user) && (isset($new_user['user_login']) &&
+                ( isset($new_user['user_email']) || (get_option("bs_auth_signup_user_email") != "Required") )
+                ) && ( isset($_POST['register']) || $_SESSION['bsauth_register_auto'] )) {
+          if (!isset($new_user['user_pass']))
+            $new_user['user_pass'] = wp_hash_password(wp_generate_password());
+          $user_id = wp_insert_user($new_user);
+          if (is_numeric($user_id)) {
+            unset($_SESSION['bsauth_register']);
+            $_SESSION['bsauth_registered'] = 1;
+            wp_set_current_user($user_id);
+            wp_set_auth_cookie($user_id);
+            
+            $canRegister = ($registerOptions == "Both" ||
+              ($registerOptions == "HonourGlobal" &&
+              get_option('users_can_register')));
+            if ($local && ($registerOptions == "LocalOnly" || $canRegister)) {
+              $_SESSION['bsauth_display_message'] = sprintf(__("Welcome to %s.", "BlaatLogin"), get_bloginfo('name'));
+            } elseif ($registerOptions == "RemoteOnly" || $canRegister) {
+
+              global $BSLOGIN_PLUGINS;
+              $serviceToLink = $BSLOGIN_PLUGINS[$plugin_id];
+              if ($serviceToLink) {
+                if ($serviceToLink->Link($login_id)) {
+                  $_SESSION['bsauth_display_message'] = sprintf(__("Welcome to %s.", "BlaatLogin"), get_bloginfo('name'));
+                } else {
+                  // This should never happen. Cannot sign up with already linked account.
+                  // but it did?
+                  $_SESSION['bsauth_display_message'] = __("An error occurred while registering your account.", "BlaatLogin");
+                }
+              } else {
+                $_SESSION['bsauth_display_message'] = __("Plugin not registered.", "BlaatLogin");
+              }
+            } else {
+              $_SESSION['bsauth_display_message'] = __("Registration has been disabled.", "BlaatLogin");
+            }
+          } else {
+            $_SESSION['bsauth_display_message'] = __($user_id->get_error_message());
+          }
+        }
+      }
+      // end regging
+    }
+
   }
 
 }
