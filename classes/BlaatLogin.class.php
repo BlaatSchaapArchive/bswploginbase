@@ -596,7 +596,14 @@ if (class_exists("BlaatSchaap")) {
       $loginOptions = get_option("blaatlogin_login_enabled");
       $registerOptions = get_option("blaatlogin_register_enabled");
       $linkOptions = get_option("blaatlogin_link_enabled");
+      
+      $reggingGlobalAllowed = $registerOptions == "Both" ||
+          ($registerOptions == "HonourGlobal" && get_option('users_can_register'));
+      $reggingRemoteOnly = ($registerOptions == "RemoteOnly"); 
+      $reggingLocalOnly = ($registerOptions == "LocalOnly"); 
 
+      
+      
       // begin not loggedin, logging, linking,regging
       if (!($logged || $logging || $linking || $regging)) {
 
@@ -623,7 +630,7 @@ if (class_exists("BlaatSchaap")) {
           $xmlLocalLinkRedir = $xmlLocalLinkForm->addChild("input");
           $xmlLocalLinkRedir->addAttribute("name", "redirect_to");
           $xmlLocalLinkRedir->addAttribute("type", "hidden");
-          $xmlLocalLinkRedir->addAttribute("value", blaat_get_current_url()); //TODO migrate to class
+          $xmlLocalLinkRedir->addAttribute("value", BlaatSchaap::getCurrentURL()); //TODO migrate to class
 
           $xmlLocalLinkFormTable = $xmlLocalLinkForm->addChild("table");
 
@@ -733,10 +740,9 @@ if (class_exists("BlaatSchaap")) {
       // end logged in (show linking)
       // TODO ?? show something when ($logging && $linkOptions!="Enabled")
 
-      if ($regging && ($registerOptions == "RemoteOnly" ||
-              $registerOptions == "Both" ||
-              ($registerOptions == "HonourGlobal" &&
-              get_option('users_can_register'))) &&
+
+      if ($regging && ( $reggingRemoteOnly|| $reggingGlobalAllowed )
+               &&
               !$linking && !$regging_local) {
         if (isset($_SESSION['new_user']))
           $new_user = $_SESSION['new_user'];
@@ -800,7 +806,7 @@ if (class_exists("BlaatSchaap")) {
         $xmlLocalLinkRedir = $xmlLocalLinkForm->addChild("input");
         $xmlLocalLinkRedir->addAttribute("name", "redirect_to");
         $xmlLocalLinkRedir->addAttribute("type", "hidden");
-        $xmlLocalLinkRedir->addAttribute("value", BlaatSchaap::getCurrentURL()); //TODO migrate to class
+        $xmlLocalLinkRedir->addAttribute("value", BlaatSchaap::getCurrentURL()); 
 
         $xmlLocalLinkFormTable = $xmlLocalLinkForm->addChild("table");
 
@@ -825,10 +831,7 @@ if (class_exists("BlaatSchaap")) {
 
 
       // begin regging local
-      if ($regging_local && ($registerOptions == "LocalOnly" ||
-              $registerOptions == "Both" ||
-              ($registerOptions == "HonourGlobal" &&
-              get_option('users_can_register')))) {
+      if ($regging_local && ( $reggingLocalOnly|| $reggingGlobalAllowed ) ) {
         // TODO :: What are the differences between the local and remote
         // login forms??? Possibly merge!!! no $new_user, added password field
         $xmlForm = $xmlroot->addChild("form");
@@ -872,6 +875,35 @@ if (class_exists("BlaatSchaap")) {
       }
       // end regging
 
+      //$reggingGlobalAllowed $reggingRemoteOnly $reggingLocalOnly
+      
+      if ($regging &! $reggingGlobalAllowed){
+        if ($regging_local && $reggingRemoteOnly) {
+          $message = __("Local user registrations have been disabled, only remote registrations are allowed.","BlaatLogin");
+        } elseif (!$regging_local && $reggingLocalOnly) {
+          $message = __("Remote user registrations have been disabled, only local registrations are allowed.","BlaatLogin");
+        } else {
+          $message = __("User registrations have been disabled.","BlaatLogin");
+        }
+        $xmlMessage = $xmlroot->addChild("div", $message);
+        $xmlMessage->addAttribute("class", "bsauth_message");
+      }
+      
+      if ($linking && ($linkOptions =! "Enabled")){
+        $message = __("User linking have been disabled.","BlaatLogin");
+        $xmlMessage = $xmlroot->addChild("div", $message);
+        $xmlMessage->addAttribute("class", "bsauth_message");
+      }
+      
+      if ($logging &!
+        (!($loginOptions == "Disabled") ||
+        ($loginOptions == "LocalOnly")) &&
+        !$logged) {
+        $message = __("Remote logging in has been disabled.","BlaatLogin");
+        $xmlMessage = $xmlroot->addChild("div", $message);
+        $xmlMessage->addAttribute("class", "bsauth_message");
+      }
+      
       $customCSS = get_option("bsauth_custom_button");
       if ($customCSS)
         $xmlroot->addChild("style", $customCSS);
@@ -991,8 +1023,8 @@ if (class_exists("BlaatSchaap")) {
        * 
        */
       if ($logging &&
-              (!($loginOptions == "Disabled") || 
-              ($loginOptions == "LocalOnly")) && 
+              (!($loginOptions == "Disabled") ||
+              ($loginOptions == "LocalOnly")) &&
               !$logged) {
         if (isset($_POST['bsauth_login'])) {
           $login = explode("-", $_POST['bsauth_login']);
@@ -1048,7 +1080,7 @@ if (class_exists("BlaatSchaap")) {
       // end loggin in
       // 
       // begin regging
-      if ($regging  &&!$logged) {
+      if ($regging && !$logged) {
         if (!isset($_SESSION['bsauth_register'])) {
           $_SESSION['bsauth_register'] = $_POST['bsauth_register'];
         }
@@ -1092,10 +1124,10 @@ if (class_exists("BlaatSchaap")) {
             $_SESSION['bsauth_registered'] = 1;
             wp_set_current_user($user_id);
             wp_set_auth_cookie($user_id);
-            
+
             $canRegister = ($registerOptions == "Both" ||
-              ($registerOptions == "HonourGlobal" &&
-              get_option('users_can_register')));
+                    ($registerOptions == "HonourGlobal" &&
+                    get_option('users_can_register')));
             if ($local && ($registerOptions == "LocalOnly" || $canRegister)) {
               $_SESSION['bsauth_display_message'] = sprintf(__("Welcome to %s.", "BlaatLogin"), get_bloginfo('name'));
             } elseif ($registerOptions == "RemoteOnly" || $canRegister) {
